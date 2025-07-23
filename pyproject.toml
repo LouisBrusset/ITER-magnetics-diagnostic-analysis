@@ -1,32 +1,44 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "magnetics-diagnostic-analysis"
 version = "0.1.0"
-description = "Try to find faulty signal in diagnostics by self-supervised learning."
 authors = [{ name = "Louis Brusset", email = "louis.brusset@etu.minesparis.psl.eu" }]
-requires-python = ">=3.9, <3.12"
-readme = "README.md"
+description = "Try to find faulty signal in diagnostics by self-supervised learning."
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
 
+requires-python = ">=3.9, <3.12"
 dependencies = [
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "seaborn",
-    "scikit-learn",
-    "torch",
-    "torchinfo",
-    "xarray",
-    "zarr",
-    "requests",
-    "tqdm",
-    "ipykernel"
+    "aiohttp>=3.11.18",
+    "fastparquet>=2024.11.0",
+    "fsspec>=2025.3.2",
+    "jupyterlab>=4.4.2",
+    "matplotlib>=3.10.3",
+    "netcdf4>=1.7.2",
+    "numpy>=2.2.5",
+    "pandas>=2.2.3",
+    "pillow>=11.2.1",
+    "pyarrow>=20.0.0",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
+    "tqdm>=4.67.1",
+    "xarray>=2025.4.0",
+    "zarr>=3.0.7",
+    "torch==2.2.1",
+    "torchinfo==1.8.0",
+    "ipykernel==6.29.0"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "ruff"]
+dev = [
+    "pytest",
+    "black",
+    "ruff"
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
