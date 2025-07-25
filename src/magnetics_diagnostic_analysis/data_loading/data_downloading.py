@@ -7,7 +7,7 @@ import tqdm
 import requests
 import pickle
 
-from src.magnetics_diagnostic_analysis.data_loading.permanent_state_filtering import ip_filter
+from permanent_state_filtering import ip_filter
 
 
 def shot_list(campaign: str = "M9", quality: bool = None) -> list[int]:
@@ -64,13 +64,13 @@ def build_level_2_data(shots: list[int] = None, groups: list[str] = None, perman
     # summary = summary.loc[:, ["shot_id", 'cpf_useful', 'cpf_abort']]
 
     dataset = {}
-    for _, shot in tqdm.tqdm(
+    for shot in tqdm.tqdm(
         shots,
         desc="Loading shots",
         total=len(shots)
         ):
-        summary = to_dask(shot, "summary").loc[:, ["shot_id", 'ip']]
-        time_ip = summary.coords['time'].values
+        summary = to_dask(shot, "summary")[['ip']]
+        time_ip = summary['time'].values
         if permanent_state:
             mask, _, _ = ip_filter(summary['ip'].values, filter='default', min_current=4.e4)
 
@@ -85,27 +85,24 @@ def build_level_2_data(shots: list[int] = None, groups: list[str] = None, perman
                 dataset[shot] = dataset.get(shot, []) + [data]
             except (IndexError, KeyError):
                 print(f"Group {group} not found for shot {shot}. Skipping.")
-    print(len(dataset))
-    print(dataset)
-    return dataset
-
 
     # concatenate datasets
-    #camera_data = {}
-    #for key, objs in dataset.items():
-    #    camera_data[key] = xr.concat(objs, "shot_id", combine_attrs="drop_conflicts")
-    #    camera_data[key] = camera_data[key].rename({"data": "frame"})
-    #    del camera_data[key].attrs["mds_name"]
-    #    del camera_data[key].attrs["CLASS"]
-    #
-    #return camera_data
+    xr_dataset = {}
+    for key, objs in dataset.items():
+        xr_dataset[key] = xr.concat(objs, "shot_id", combine_attrs="drop_conflicts")
+        #xr_dataset[key] = xr_dataset[key].rename({"data": "frame"})
+        #del xr_dataset[key].attrs["mds_name"]
+        #del xr_dataset[key].attrs["CLASS"]
+
+    return xr.merge(xr_dataset.values())
 
 
 
 def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.Dataset:
     """Return data, try to load from cache else build."""
-    path = pathlib.Path().absolute().parent / "data"
+    path = pathlib.Path().absolute() / "src/magnetics_diagnostic_analysis/data"
     filename = path / "brut_data.pkl"
+    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(filename, "rb") as f:
             brut_data = pickle.load(f)
@@ -122,14 +119,25 @@ def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.
 
 
 if __name__ == "__main__":
-    shots = shot_list(campaign="M9", quality=True)[:1]
+    shots = shot_list(campaign="M9", quality=True)[:3]
     groups = ["magnetics"]
     permanent_state = False
 
     brut_data = load_data(shots=shots, groups=groups, permanent_state=permanent_state)
     
-    path = pathlib.Path().absolute().parent / "data"
+    path = pathlib.Path().absolute() / "src/magnetics_diagnostic_analysis/data"
     brut_data.to_netcdf(path / "train.nc")
+
+    with (xr.open_dataset(path / "train.nc") as train):
+        train = train.load()
+
+    print(train.coords)
+    print("===============")
+    print(train.data_vars)
+    print("===============")
+    print(train.attrs)
+    print("===============")
+    print(train['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[2]).values)
 
 
 
