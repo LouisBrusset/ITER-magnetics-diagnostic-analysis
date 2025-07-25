@@ -97,3 +97,40 @@ This will open a browser window with the Jupyter interface where you can select 
 ## License
 
 Not any licence for this project.
+
+
+
+
+# Nom du projet
+
+Une courte description claire et concise de ce que fait votre projet.
+
+## Table des matières
+
+- [À propos](#à-propos)
+- [Fonctionnalités](#fonctionnalités)
+- [Installation](#installation)
+- [Utilisation](#utilisation)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
+- [Contact](#contact)
+- [Remerciements](#remerciements)
+
+## À propos
+
+Expliquez le contexte du projet : pourquoi il existe, à quoi il sert, et éventuellement ses objectifs.
+
+## Fonctionnalités
+
+- ✅ Fonction 1
+- ✅ Fonction 2
+- 🔧 Fonction en développement
+
+## Installation
+
+Instructions pour installer le projet localement. Par exemple :
+
+```bash
+git clone https://github.com/votre-utilisateur/nom-du-projet.git
+cd nom-du-projet
+npm install
