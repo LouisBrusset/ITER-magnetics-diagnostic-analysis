@@ -28,4 +28,6 @@ env/
 
 # Large datasets
 #
-
+src/magnetics_diagnostic_analysis/data/test.nc
+src/magnetics_diagnostic_analysis/data/train.nc
+src/magnetics_diagnostic_analysis/data/camera_data.pkl

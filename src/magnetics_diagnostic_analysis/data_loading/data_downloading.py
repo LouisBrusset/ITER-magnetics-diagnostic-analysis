@@ -48,7 +48,7 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
 
 
 
-def build_level_2_data(shots: list[int] = None, groups: list[str] = None, permanent_state: bool = False) -> xr.Dataset:
+def build_level_2_data(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
     """
     Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
     
@@ -63,43 +63,77 @@ def build_level_2_data(shots: list[int] = None, groups: list[str] = None, perman
     # summary = pd.read_parquet(f'{URL}/parquet/level2/shots')
     # summary = summary.loc[:, ["shot_id", 'cpf_useful', 'cpf_abort']]
 
-    dataset = {}
-    for shot in tqdm.tqdm(
-        shots,
-        desc="Loading shots",
-        total=len(shots)
-        ):
-        summary = to_dask(shot, "summary")[['ip']]
-        time_ip = summary['time'].values
+    dataset = []
+
+    for shot in tqdm.tqdm(shots, desc="Loading shots", total=len(shots)):
+        summary_ip = to_dask(shot, "summary")['ip']
+        time_ip = summary_ip['time']
         if permanent_state:
-            mask, _, _ = ip_filter(summary['ip'].values, filter='default', min_current=4.e4)
+            mask, _, _ = ip_filter(summary_ip.values, filter='default', min_current=4.e4)
+            time_ref = time_ip[mask]
+        else:
+            time_ref = time_ip
+        
+        signals = []
 
         for group in groups:
             try:
-                data = to_dask(shot, group).interp({"time": time_ip})
-                if permanent_state:
-                    data = data.where(mask, drop=True)
-                data.coords["shot_id"] = shot
-                data.coords["group"] = group
-                data.coords["time"] = time_ip[mask] if permanent_state else time_ip
-                dataset[shot] = dataset.get(shot, []) + [data]
+                data = to_dask(shot, group)
+                if group == "summary":
+                    # If the group is summary, we do not need the 'ip' variable
+                    data = data.drop_vars("ip", errors="ignore")
+            
+                data = data.interp({"time": time_ref})
+
+                other_times = set()
+                for var in data.data_vars:
+                    time_dim = next((dim for dim in data[var].dims if dim.startswith('time')), 'time')
+                    if time_dim != "time":
+                        other_times.add(time_dim)
+                    data[var] = data[var].interp({time_dim: time_ip})               
+                    data[var] = data[var].transpose("time", ...)
+                    data[var].attrs |= {"group": group}
+                data = data.drop_vars(other_times)
+
+                # if permanent_state:
+                #     data = data.where(mask, drop=True)
+                # data = data.expand_dims("group")
+                # data = data.assign_coords(group=("group", [group]))
+                
+                signals.append(data)
+
             except (IndexError, KeyError):
                 print(f"Group {group} not found for shot {shot}. Skipping.")
 
-    # concatenate datasets
-    xr_dataset = {}
-    for key, objs in dataset.items():
-        xr_dataset[key] = xr.concat(objs, "shot_id", combine_attrs="drop_conflicts")
-        #xr_dataset[key] = xr_dataset[key].rename({"data": "frame"})
-        #del xr_dataset[key].attrs["mds_name"]
-        #del xr_dataset[key].attrs["CLASS"]
+        if not signals:
+            continue
 
-    return xr.merge(xr_dataset.values())
+        shot_data = xr.merge(signals, combine_attrs="drop_conflicts")
+        shot_data = shot_data.expand_dims("shot_id")
+        shot_data = shot_data.assign_coords(shot_id=("shot_id", [shot]))
+
+        dataset.append(shot_data)
+
+    final = xr.concat(dataset, dim="shot_id", combine_attrs="drop_conflicts", coords="minimal")
+    return final
+
+
+
 
 
 
 def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.Dataset:
-    """Return data, try to load from cache else build."""
+    """
+    Load data from cache or build it if not available.
+
+    Parameters
+    shots: List of shot IDs to retrieve data for.
+    groups: List of diagnostic groups to retrieve data from.
+    permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
+
+    Return
+    An xarray Dataset containing the requested diagnostic data.
+    """
     path = pathlib.Path().absolute() / "src/magnetics_diagnostic_analysis/data"
     filename = path / "brut_data.pkl"
     pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
@@ -119,9 +153,9 @@ def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.
 
 
 if __name__ == "__main__":
-    shots = shot_list(campaign="M9", quality=True)[:3]
-    groups = ["magnetics"]
-    permanent_state = False
+    shots = shot_list(campaign="M9", quality=True)[:400]
+    groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
+    permanent_state = True
 
     brut_data = load_data(shots=shots, groups=groups, permanent_state=permanent_state)
     
@@ -129,15 +163,21 @@ if __name__ == "__main__":
     brut_data.to_netcdf(path / "train.nc")
 
     with (xr.open_dataset(path / "train.nc") as train):
-        train = train.load()
+        subset = train.isel(shot_id=shots[2:5])
+        data = subset.load()
 
-    print(train.coords)
     print("===============")
-    print(train.data_vars)
+    print(data.coords)
     print("===============")
-    print(train.attrs)
+    print(data.data_vars)
     print("===============")
-    print(train['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[2]).values)
+    print(data.attrs)
+    print("===============")
+    print(data['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[2]).values)
+    print("===============")
+    print(data['density_gradient'].sel(shot_id=shots[2]))
+    print("===============")
+    
 
 
 
