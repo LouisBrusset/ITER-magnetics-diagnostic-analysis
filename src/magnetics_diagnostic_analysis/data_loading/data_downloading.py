@@ -66,44 +66,168 @@ def build_level_2_data(shots: list[int], groups: list[str], permanent_state: boo
     dataset = []
 
     for shot in tqdm.tqdm(shots, desc="Loading shots", total=len(shots)):
-        summary_ip = to_dask(shot, "summary")['ip']
-        time_ip = summary_ip['time']
+        summary = to_dask(shot, "summary")
+        ip = summary['ip']
+        print("ip.shape", ip.shape)
+        time_ip = summary['time']
+        print(" time_ip.shape", time_ip.shape)
+        print(" time_ip", time_ip.values)
         if permanent_state:
-            mask, _, _ = ip_filter(summary_ip.values, filter='default', min_current=4.e4)
+            mask, _, _ = ip_filter(ip.values, filter='default', min_current=4.e4)
             time_ref = time_ip[mask]
         else:
             time_ref = time_ip
-        
+        print("time_ref.shape", time_ref.shape)
+        print("time_ref", time_ref.values)
+
+        time_dim_name = f"time_{shot}"      # Create a unique name for a given shot
         signals = []
+        print("time_dim_name = ", time_dim_name, "\n")
 
         for group in groups:
+            print(f"Loading group {group} for shot {shot}...")
             try:
                 data = to_dask(shot, group)
-                if group == "summary":
-                    # If the group is summary, we do not need the 'ip' variable
-                    data = data.drop_vars("ip", errors="ignore")
-            
-                data = data.interp({"time": time_ref})
-
-                other_times = set()
-                for var in data.data_vars:
-                    time_dim = next((dim for dim in data[var].dims if dim.startswith('time')), 'time')
-                    if time_dim != "time":
-                        other_times.add(time_dim)
-                    data[var] = data[var].interp({time_dim: time_ip})               
-                    data[var] = data[var].transpose("time", ...)
-                    data[var].attrs |= {"group": group}
-                data = data.drop_vars(other_times)
-
-                # if permanent_state:
-                #     data = data.where(mask, drop=True)
-                # data = data.expand_dims("group")
-                # data = data.assign_coords(group=("group", [group]))
-                
-                signals.append(data)
-
             except (IndexError, KeyError):
                 print(f"Group {group} not found for shot {shot}. Skipping.")
+                continue
+
+            if group == "summary":
+                # If the group is summary, we do not need the 'ip' variable
+                data = data.drop_vars("ip", errors="ignore")
+            print(data.dims)
+            print(data.coords)
+
+            interpolated_vars = {}
+            other_time_coords = set()
+
+            for var_name, da in data.data_vars.items():
+                # Trouve la dimension temporelle (peut être "time", "time_saddle", etc.)
+                time_dim = next((dim for dim in da.dims if dim.startswith("time")), None)
+
+                if time_dim is not None:
+                    if time_dim != "time":
+                        # Interpole la variable sur time_ref
+                        da_interp = da.interp({time_dim: time_ref})
+                        other_time_coords.add(time_dim)
+                    else:
+                        da_interp = da.interp({time_dim: time_ref})
+
+                    # On force la première dimension à être la nouvelle temporelle commune
+                    da_interp = da_interp.transpose(..., transpose_coords=False)
+                    da_interp = da_interp.transpose("time", ...)
+                else:
+                    da_interp = da
+
+                da_interp.attrs |= {"group": group}
+                interpolated_vars[var_name] = da_interp
+
+            cleaned = xr.Dataset(interpolated_vars)
+
+            # Nettoyage : suppression des coords temporelles inutiles
+            for coord in other_time_coords:
+                if coord in cleaned.coords:
+                    cleaned = cleaned.drop_vars(coord)
+
+            # Étape finale : renommer "time" en nom unique pour ce shot
+            cleaned = cleaned.rename_dims({"time": time_dim_name})
+            #cleaned = cleaned.assign_coords({time_dim_name: time_ref})
+            print(cleaned)
+            print("cleaned.dims", cleaned.dims)
+            print("cleaned.coords", cleaned.coords)
+            signals.append(cleaned)
+
+            """
+                # Étape 1 — Trouver toutes les dimensions temporelles (ex: time, time_mirnov, etc.)
+                time_dims = {dim for var in data.data_vars for dim in data[var].dims if dim.startswith("time")}
+                print(f"Found time dimensions: {time_dims}")
+
+                # Étape 2 — Renommer toutes les dimensions temporelles en `time_dim_name`
+                rename_map = {old_dim: time_dim_name for old_dim in time_dims}
+                data = data.rename_dims(rename_map)
+
+                # Étape 3 — Ajouter la coordonnée de temps commune
+                #data = data.assign_coords({time_dim_name: time_ref})
+
+                # Étape 4 — Interpoler toutes les variables contenant `time_dim_name`
+                for var_name, da in data.data_vars.items():
+                    if time_dim_name in da.dims:
+                        da_interp = da.interp({time_dim_name: time_ref})
+                        da_interp = da_interp.transpose(time_dim_name, ...)  # met le temps en premier
+                        data[var_name] = da_interp
+                    data[var_name].attrs |= {"group": group}
+
+                # Étape 5 — Nettoyage : supprimer les anciennes coordonnées temps (sauf la nouvelle)
+                for coord in list(data.coords):
+                    if coord.startswith("time") and coord != time_dim_name:
+                        data = data.drop_vars(coord)
+
+                signals.append(data)
+            """
+
+            """
+            data = data.rename_dims({"time": time_dim_name})
+            print(data.dims)
+            print(data.coords)
+            data = data.assign_coords({time_dim_name: time_ref})
+            print(data.dims)
+            print(data.coords)
+            data = data.interp({time_dim_name: time_ref})
+
+
+            interpolated_vars = {}
+            used_time_dims = set()
+
+            for var_name, da in data.data_vars.items():
+                print(f"Processing variable {var_name}...")
+                print("Dimensions:", da.dims)
+                time_dim = next((dim for dim in da.dims if dim.startswith('time')), None)
+                if time_dim is None:
+                    interpolated_vars[var_name] = da
+                    continue
+                else:
+                    da_interp = da.interp({time_dim: time_ref})
+                    da_interp = da_interp.transpose(time_dim, ...)
+                    interpolated_vars[var_name] = da_interp
+                    used_time_dims.add(time_dim)
+                interpolated_vars[var_name].attrs |= {"group": group}
+
+            cleaned = xr.Dataset(interpolated_vars)
+
+            for coord in cleaned.coords:
+                if coord.startswith("time") and coord != time_dim_name:
+                    if coord in used_time_dims:
+                        continue
+                    cleaned = cleaned.drop_vars(coord)
+            if "time" in cleaned.dims:
+                cleaned = cleaned.rename_dims({"time": time_dim_name})
+                cleaned = cleaned.assign_coords({time_dim_name: time_ref})
+            
+            signals.append(cleaned)
+            print(cleaned)
+                
+                
+            #    if time_dim != "time":
+            #        other_times.add(time_dim)
+            #        data[var] = data[var].interp({time_dim: time_ref})
+#
+#
+            #    data[var] = data[var].transpose(time_dim_name, ...)
+            #    data[var].attrs |= {"group": group}
+            #data = data.drop_vars(other_times)
+#
+#
+#
+#
+            ## if permanent_state:
+            ##     data = data.where(mask, drop=True)
+            ## data = data.expand_dims("group")
+            ## data = data.assign_coords(group=("group", [group]))
+#
+#
+            #signals.append(data)
+            """
+            
 
         if not signals:
             continue
@@ -112,9 +236,11 @@ def build_level_2_data(shots: list[int], groups: list[str], permanent_state: boo
         shot_data = shot_data.expand_dims("shot_id")
         shot_data = shot_data.assign_coords(shot_id=("shot_id", [shot]))
 
+        #shot_data = shot_data.assign_coords({f"time_{shot}": ("shot_id", [time_ref])})
+
         dataset.append(shot_data)
 
-    final = xr.concat(dataset, dim="shot_id", combine_attrs="drop_conflicts", coords="minimal")
+    final = xr.concat(dataset, dim="shot_id", coords="minimal", combine_attrs="drop_conflicts")
     return final
 
 
@@ -153,9 +279,11 @@ def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.
 
 
 if __name__ == "__main__":
-    shots = shot_list(campaign="M9", quality=True)[:400]
+    n_samples = 3  # Number of shots to load
+
+    shots = shot_list(campaign="M9", quality=True)[:n_samples]
     groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
-    permanent_state = True
+    permanent_state = False
 
     brut_data = load_data(shots=shots, groups=groups, permanent_state=permanent_state)
     
@@ -163,7 +291,7 @@ if __name__ == "__main__":
     brut_data.to_netcdf(path / "train.nc")
 
     with (xr.open_dataset(path / "train.nc") as train):
-        subset = train.isel(shot_id=shots[2:5])
+        subset = train.sel(shot_id=shots[2:5])
         data = subset.load()
 
     print("===============")
@@ -173,9 +301,9 @@ if __name__ == "__main__":
     print("===============")
     print(data.attrs)
     print("===============")
-    print(data['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[2]).values)
+    print(data['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[3]).values)
     print("===============")
-    print(data['density_gradient'].sel(shot_id=shots[2]))
+    print(data['density_gradient'].sel(shot_id=shots[3]))
     print("===============")
     
 
