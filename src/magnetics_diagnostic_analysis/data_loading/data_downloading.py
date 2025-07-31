@@ -178,6 +178,9 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
             time_ref = time[mask]
         else:
             time_ref = time
+        if len(time_ref) == 0:
+            print(f"Skipping shot {shot_id} due to empty time_ref.")
+            continue
 
         signal = []
 
@@ -210,7 +213,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
             signal.append(data)
 
         signal = xr.merge(signal, combine_attrs="drop_conflicts")
-        signal["shot_index"] = "time", shot_index * np.ones(ref.sizes["time"], int)
+        signal["shot_index"] = "time", shot_index * np.ones(len(time_ref), int)
         dataset.append(signal)
 
     final = xr.concat(dataset, "time", join="override", coords="minimal", combine_attrs="drop_conflicts")           # coords="minimal" deletes all coords that are not in all datasets
@@ -294,6 +297,8 @@ if __name__ == "__main__":
         shots=shots, groups=groups, 
         permanent_state=permanent_state, 
         random_seed=random_seed)
+    
+    print("Data loading completed.\n")
     
     path = pathlib.Path().absolute() / file_path / f"train{suffix}.nc"
     with (xr.open_dataset(path) as train):

@@ -29,3 +29,4 @@ if __name__ == "__main__":
         suffix="_vae"
     )
 
+    print("Data loading completed.")

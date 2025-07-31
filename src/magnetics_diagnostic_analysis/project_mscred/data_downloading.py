@@ -22,10 +22,11 @@ if __name__ == "__main__":
     load_data(
         shots=shots,
         groups=["summary", "magnetics"],
-        permanent_state=False,
+        permanent_state=True,
         train_test_rate=0.3333,
         random_seed=random_seed,
         file_path="src/magnetics_diagnostic_analysis/data/",
         suffix="_mscred"
     )
 
+    print("Data loading completed.")
