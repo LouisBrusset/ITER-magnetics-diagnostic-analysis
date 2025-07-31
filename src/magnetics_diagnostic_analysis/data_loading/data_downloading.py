@@ -1,28 +1,35 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+import random as rd
 
 import pathlib
 import tqdm
 import requests
-import pickle
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent))
 from permanent_state_filtering import ip_filter
 
 
-def shot_list(campaign: str = "M9", quality: bool = None) -> list[int]:
+def shot_list(campaign: str = "", quality: bool = None) -> list[int]:
     """
     Return a list of shot IDs for a given campaign.
 
     Parameters
-    campaign: Campaign name to filter shots.
+    campaign: Campaign name to filter shots. If None, return all campaigns.
     quality: If True, return only shots with 'cpf_useful' label. If False, return shots with 'cpf_abort' label.
     
     Returns
     List of shot IDs.
     """
     URL = "https://mastapp.site"
-    shots_df = pd.read_parquet(f'{URL}/parquet/level2/shots?filters=campaign$eq:{campaign}')
+    if campaign == "":
+        shots_df = pd.read_parquet(f'{URL}/parquet/level2/shots')
+    else:
+        shots_df = pd.read_parquet(f'{URL}/parquet/level2/shots?filters=campaign$eq:{campaign}')
+    
     shots_df['shot_label'] = (shots_df['cpf_useful'] == 1).astype(int)
     if quality is None:
         return shots_df['shot_id'].tolist()
@@ -48,44 +55,44 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
 
 
 
-def build_level_2_data(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
+def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
     """
+    Warning: This function is deprecated and will be removed in future versions.
+    The aim was to build a dataset with shot_id as a dimension, but aligning problems have occurred.
+    Use `build_level_2_data_all_shot` instead.
+    ==============
+
+    
     Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
     
     Parameters
+    shots: List of shot IDs to retrieve data for.
     groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
     permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
 
     Return
     An xarray Dataset containing the requested diagnostic data.
     """
-    # URL = "https://mastapp.site"
-    # summary = pd.read_parquet(f'{URL}/parquet/level2/shots')
-    # summary = summary.loc[:, ["shot_id", 'cpf_useful', 'cpf_abort']]
 
     dataset = []
 
     for shot in tqdm.tqdm(shots, desc="Loading shots", total=len(shots)):
         summary = to_dask(shot, "summary")
         ip = summary['ip']
-        print("ip.shape", ip.shape)
         time_ip = summary['time']
-        print(" time_ip.shape", time_ip.shape)
-        print(" time_ip", time_ip.values)
+
         if permanent_state:
             mask, _, _ = ip_filter(ip.values, filter='default', min_current=4.e4)
             time_ref = time_ip[mask]
         else:
             time_ref = time_ip
-        print("time_ref.shape", time_ref.shape)
-        print("time_ref", time_ref.values)
 
         time_dim_name = f"time_{shot}"      # Create a unique name for a given shot
-        signals = []
+        shot_signals = []
         print("time_dim_name = ", time_dim_name, "\n")
 
         for group in groups:
-            print(f"Loading group {group} for shot {shot}...")
+            print("\n", f"Loading group {group} for shot {shot}...", "\n")
             try:
                 data = to_dask(shot, group)
             except (IndexError, KeyError):
@@ -95,27 +102,18 @@ def build_level_2_data(shots: list[int], groups: list[str], permanent_state: boo
             if group == "summary":
                 # If the group is summary, we do not need the 'ip' variable
                 data = data.drop_vars("ip", errors="ignore")
-            print(data.dims)
-            print(data.coords)
 
             interpolated_vars = {}
             other_time_coords = set()
-
+            
             for var_name, da in data.data_vars.items():
-                # Trouve la dimension temporelle (peut être "time", "time_saddle", etc.)
-                time_dim = next((dim for dim in da.dims if dim.startswith("time")), None)
-
+                print(f"Processing variable: {var_name}")
+                # Find the time dimension (could be "time", "time_saddle", etc.)
+                time_dim = next((d for d in da.dims if d.startswith("time")), None)
+                
                 if time_dim is not None:
-                    if time_dim != "time":
-                        # Interpole la variable sur time_ref
-                        da_interp = da.interp({time_dim: time_ref})
-                        other_time_coords.add(time_dim)
-                    else:
-                        da_interp = da.interp({time_dim: time_ref})
-
-                    # On force la première dimension à être la nouvelle temporelle commune
-                    da_interp = da_interp.transpose(..., transpose_coords=False)
-                    da_interp = da_interp.transpose("time", ...)
+                    da_interp = da.interp({time_dim: time_ref})
+                    other_time_coords.add(time_dim)
                 else:
                     da_interp = da
 
@@ -124,269 +122,191 @@ def build_level_2_data(shots: list[int], groups: list[str], permanent_state: boo
 
             cleaned = xr.Dataset(interpolated_vars)
 
-            # Nettoyage : suppression des coords temporelles inutiles
+            # Drop unnecessary time coordinates
             for coord in other_time_coords:
                 if coord in cleaned.coords:
                     cleaned = cleaned.drop_vars(coord)
-
-            # Étape finale : renommer "time" en nom unique pour ce shot
-            cleaned = cleaned.rename_dims({"time": time_dim_name})
-            #cleaned = cleaned.assign_coords({time_dim_name: time_ref})
+            # Final step: rename "time" to a unique name for this shot
+            cleaned = cleaned.swap_dims({'time': time_dim_name})
+            cleaned = cleaned.assign_coords({time_dim_name: time_ref.values})
+            cleaned = cleaned.transpose(time_dim_name, ...)
             print(cleaned)
-            print("cleaned.dims", cleaned.dims)
-            print("cleaned.coords", cleaned.coords)
-            signals.append(cleaned)
 
-            """
-                # Étape 1 — Trouver toutes les dimensions temporelles (ex: time, time_mirnov, etc.)
-                time_dims = {dim for var in data.data_vars for dim in data[var].dims if dim.startswith("time")}
-                print(f"Found time dimensions: {time_dims}")
-
-                # Étape 2 — Renommer toutes les dimensions temporelles en `time_dim_name`
-                rename_map = {old_dim: time_dim_name for old_dim in time_dims}
-                data = data.rename_dims(rename_map)
-
-                # Étape 3 — Ajouter la coordonnée de temps commune
-                #data = data.assign_coords({time_dim_name: time_ref})
-
-                # Étape 4 — Interpoler toutes les variables contenant `time_dim_name`
-                for var_name, da in data.data_vars.items():
-                    if time_dim_name in da.dims:
-                        da_interp = da.interp({time_dim_name: time_ref})
-                        da_interp = da_interp.transpose(time_dim_name, ...)  # met le temps en premier
-                        data[var_name] = da_interp
-                    data[var_name].attrs |= {"group": group}
-
-                # Étape 5 — Nettoyage : supprimer les anciennes coordonnées temps (sauf la nouvelle)
-                for coord in list(data.coords):
-                    if coord.startswith("time") and coord != time_dim_name:
-                        data = data.drop_vars(coord)
-
-                signals.append(data)
-            """
-
-            """
-            data = data.rename_dims({"time": time_dim_name})
-            print(data.dims)
-            print(data.coords)
-            data = data.assign_coords({time_dim_name: time_ref})
-            print(data.dims)
-            print(data.coords)
-            data = data.interp({time_dim_name: time_ref})
-
-
-            interpolated_vars = {}
-            used_time_dims = set()
-
-            for var_name, da in data.data_vars.items():
-                print(f"Processing variable {var_name}...")
-                print("Dimensions:", da.dims)
-                time_dim = next((dim for dim in da.dims if dim.startswith('time')), None)
-                if time_dim is None:
-                    interpolated_vars[var_name] = da
-                    continue
-                else:
-                    da_interp = da.interp({time_dim: time_ref})
-                    da_interp = da_interp.transpose(time_dim, ...)
-                    interpolated_vars[var_name] = da_interp
-                    used_time_dims.add(time_dim)
-                interpolated_vars[var_name].attrs |= {"group": group}
-
-            cleaned = xr.Dataset(interpolated_vars)
-
-            for coord in cleaned.coords:
-                if coord.startswith("time") and coord != time_dim_name:
-                    if coord in used_time_dims:
-                        continue
-                    cleaned = cleaned.drop_vars(coord)
-            if "time" in cleaned.dims:
-                cleaned = cleaned.rename_dims({"time": time_dim_name})
-                cleaned = cleaned.assign_coords({time_dim_name: time_ref})
+            shot_signals.append(cleaned)
             
-            signals.append(cleaned)
-            print(cleaned)
-                
-                
-            #    if time_dim != "time":
-            #        other_times.add(time_dim)
-            #        data[var] = data[var].interp({time_dim: time_ref})
-#
-#
-            #    data[var] = data[var].transpose(time_dim_name, ...)
-            #    data[var].attrs |= {"group": group}
-            #data = data.drop_vars(other_times)
-#
-#
-#
-#
-            ## if permanent_state:
-            ##     data = data.where(mask, drop=True)
-            ## data = data.expand_dims("group")
-            ## data = data.assign_coords(group=("group", [group]))
-#
-#
-            #signals.append(data)
-            """
-            
-
-        if not signals:
+        if not shot_signals:
             continue
 
-        shot_data = xr.merge(signals, combine_attrs="drop_conflicts")
+        shot_data = xr.merge(shot_signals, combine_attrs="drop_conflicts")
         shot_data = shot_data.expand_dims("shot_id")
         shot_data = shot_data.assign_coords(shot_id=("shot_id", [shot]))
 
-        #shot_data = shot_data.assign_coords({f"time_{shot}": ("shot_id", [time_ref])})
-
         dataset.append(shot_data)
 
-    final = xr.concat(dataset, dim="shot_id", coords="minimal", combine_attrs="drop_conflicts")
+    if not dataset:
+        raise ValueError("No shot data found.")
+
+    final = xr.concat(dataset, dim="shot_id", coords="minimal")
+    print("dataset ok")
+    
     return final
 
 
 
+def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
+    """
+    Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
+    
+    Parameters
+    shots: List of shot IDs to retrieve data for.
+    groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
+    permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
+
+    Return
+    An xarray Concatenated dataset containing the requested diagnostic data, aligned on 'time' with 'shot_index' and 'shot_id'.
+    """
+    
+    dataset = []
+
+    for shot_index, shot_id in tqdm.tqdm(enumerate(shots), desc="Loading shots", total=len(shots)):
+        ref = to_dask(shot_id, "summary")
+        ip_ref = ref['ip']
+        time = ref.time
+
+        if permanent_state:
+            mask, _, _ = ip_filter(ip_ref.values, filter='default', min_current=4.e4)
+            time_ref = time[mask]
+        else:
+            time_ref = time
+
+        signal = []
+
+        for group in groups:
+            #print("\n", f"Loading group {group} for shot {shot}...", "\n")
+            try:
+                data = to_dask(shot_id, group).interp({"time": time_ref})
+            except (IndexError, KeyError):
+                print(f"\nGroup {group} not found for shot {shot_id}. Skipping.")
+                continue
+
+            if group == "summary":
+                # If the group is summary, we do not need the 'ip' variable. Else issue with ip alignment in magnetics.
+                data = data.drop_vars("ip", errors="ignore")
+            
+            other_times = set()
+            for var in data.data_vars:
+                #print(f"Processing variable: {var}")
+                time_dim = next((dim for dim in data[var].dims if dim.startswith('time')), 'time')
+
+                if time_dim != "time":
+                    other_times.add(time_dim)
+                data[var] = data[var].interp({time_dim: time_ref})               
+                data[var] = data[var].transpose("time", ...)
+                data[var].attrs |= {"group": group}
+                #data[var].attrs |= {"timestamp": requests.get(f'https://mastapp.site/json/shots/{shot}').json()["timestamp"]}
+                # Timestamp goes away with concat, so we don't add it here
+
+            data = data.drop_vars(other_times)
+            signal.append(data)
+
+        signal = xr.merge(signal, combine_attrs="drop_conflicts")
+        signal["shot_index"] = "time", shot_index * np.ones(ref.sizes["time"], int)
+        dataset.append(signal)
+
+    final = xr.concat(dataset, "time", join="override", coords="minimal", combine_attrs="drop_conflicts")           # coords="minimal" deletes all coords that are not in all datasets
+    print("dataset ok")
+
+    return final
 
 
 
-def load_data(shots: list[int], groups: list[str], permanent_state: bool) -> xr.Dataset:
+def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], permanent_state: bool, random_seed: int = 42) -> None:
     """
     Load data from cache or build it if not available.
 
     Parameters
+    train_test_rate: Proportion of shots to use for training (1 - test).
     shots: List of shot IDs to retrieve data for.
     groups: List of diagnostic groups to retrieve data from.
     permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
-
+    random_seed: Seed for random number generator to shuffle shots.
+    
     Return
     An xarray Dataset containing the requested diagnostic data.
     """
-    path = pathlib.Path().absolute() / "src/magnetics_diagnostic_analysis/data"
-    filename = path / "brut_data.pkl"
-    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
+    assert 0.05 < train_test_rate < 0.95, "train_test_rate must be between 0.05 and 0.95"
+
+    path = pathlib.Path().absolute() / file_path
+    path.mkdir(exist_ok=True)
+    filename_train = path / f"train{suffix}.nc"
+    filename_test = path / f"test{suffix}.nc"
+
     try:
-        with open(filename, "rb") as f:
-            brut_data = pickle.load(f)
+        with open(filename_train, "rb") as ftrain, open(filename_test, "rb") as ftest:
+            print("Files already exist!")
+
     except FileNotFoundError:
-        brut_data = build_level_2_data(
-            shots=shots, 
-            groups=groups, 
-            permanent_state=permanent_state
-            )
-        with open(filename, "wb") as f:
-            pickle.dump(brut_data, f)
-    return brut_data
+        rng = np.random.default_rng(random_seed)
+        rng.shuffle(shots)
+        
+        split_id = int(len(shots) * (1-train_test_rate))
+        split_ids = {
+            "train": shots[:split_id],
+            "test": shots[split_id:],
+        }
+        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, permanent_state=permanent_state) for mode, shot_ids in split_ids.items()}
+        dataset = {mode: build_level_2_data_all_shots(shot_ids, groups=groups, permanent_state=permanent_state) for mode, shot_ids in split_ids.items()}
+        print("Saving to netCDF...")
+        dataset["train"].to_netcdf(filename_train)
+        dataset["test"].to_netcdf(filename_test)
+        print("netCDF ok")
+
+    return None
 
 
 
 if __name__ == "__main__":
-    n_samples = 3  # Number of shots to load
 
-    shots = shot_list(campaign="M9", quality=True)[:n_samples]
+    n_samples = 12       # Number of shots to load
+    random_seed = 42
+    campaign_number = ""
+
+    shots = shot_list(campaign=campaign_number, quality=True)
+    rd.seed(random_seed)
+    rd.shuffle(shots)
+    shots = shots[:n_samples]
+    print("Chosen shots: \n", shots)
+    print("Type of shots: ", type(shots))
+
+
+    #shots = [15585, 15212, 15010, 14998, 30410, 30418, 30420]
+
     groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
     permanent_state = False
+    train_test_rate = 0.3
+    file_path = "src/magnetics_diagnostic_analysis/data"
+    suffix = "_test"
 
-    brut_data = load_data(shots=shots, groups=groups, permanent_state=permanent_state)
+    load_data(
+        file_path=file_path, 
+        suffix=suffix,
+        train_test_rate=train_test_rate, 
+        shots=shots, groups=groups, 
+        permanent_state=permanent_state, 
+        random_seed=random_seed)
     
-    path = pathlib.Path().absolute() / "src/magnetics_diagnostic_analysis/data"
-    brut_data.to_netcdf(path / "train.nc")
+    path = pathlib.Path().absolute() / file_path / f"train{suffix}.nc"
+    with (xr.open_dataset(path) as train):
+        #subset = train.sel(shot_id=shots[])
+        data = train.load()
 
-    with (xr.open_dataset(path / "train.nc") as train):
-        subset = train.sel(shot_id=shots[2:5])
-        data = subset.load()
-
+    print("\nDataset loaded successfully.")
     print("===============")
-    print(data.coords)
+    print(data)
     print("===============")
     print(data.data_vars)
     print("===============")
-    print(data.attrs)
+    print(data["coil_current"].attrs)
     print("===============")
-    print(data['b_field_pol_probe_ccbv_field'].sel(shot_id=shots[3]).values)
-    print("===============")
-    print(data['density_gradient'].sel(shot_id=shots[3]))
-    print("===============")
+
     
-
-
-
-
-
-#test_size = 0.3  # fraction of dataset to use for testing
-#dataset = load_data()[(448, 640)]
-#dataset = dataset.drop_vars(["time", "shot_id"])  # anonymize dataset 
-## shuffle dataset
-#shot_index = np.arange(dataset.sizes["shot_id"], dtype=int)
-#rng = np.random.default_rng(7)
-#rng.shuffle(shot_index)
-#test_split = int(np.floor(test_size * dataset.sizes["shot_id"]))
-#train = dataset.isel(shot_id=shot_index[test_split:])
-#test = dataset.isel(shot_id=shot_index[:test_split])
-#solution = test.volume.to_pandas().to_frame()
-#rng.random(len(solution))
-#solution["Usage"] = np.where(rng.random(len(solution)) < 0.5, "Public", "Private")
-#test = test.drop_vars("volume")  # drop target from test dataset
-## write datasets to file
-#path = pathlib.Path().absolute().parent / "fair_mast_data/plasma_volume"
-#train.to_netcdf(path / "train.nc")
-#test.to_netcdf(path / "test.nc")
-#solution.to_csv(path / "solution.csv")
-
-############################################### 
-
-
-#def to_dataset(shots: pd.Series):
-#    """Return a concatenated xarray Dataset for a series of input shots."""
-#    dataset = []
-#    for shot_index, shot_id in shots.items():
-#        target = to_dask(shot_id, "equilibrium")['psi']
-#        signal = []
-#        for group in ["magnetics", "spectrometer_visible", "soft_x_rays", "thomson_scattering"]: 
-#            data = to_dask(shot_id, group).interp({"time": target.time})
-#            if "major_radius" in data:
-#                data = data.interp({"major_radius": target.major_radius})
-#            other_times = set()
-#            for var in data.data_vars:  # Interpolate to the target time
-#                time_dim = next((dim for dim in data[var].dims 
-#                                 if dim.startswith('time')), 'time')
-#                if time_dim != "time":
-#                    other_times.add(time_dim)
-#                data[var] = data[var].interp({time_dim: target.time})               
-#                data[var] = data[var].transpose("time", ...)
-#                data[var].attrs |= {"group": group}
-#            data = data.drop_vars(other_times)
-#            signal.append(data)
-#        signal = xr.merge(signal, combine_attrs="drop_conflicts")
-#        signal["shot_index"] = "time", shot_index * np.ones(target.sizes["time"], int)
-#        dataset.append(xr.merge([signal, target], combine_attrs="override"))
-#    return xr.concat(dataset, "time", join="override", combine_attrs="drop_conflicts")
-#
-#source_ids = np.array([15585, 15212, 15010, 14998, 30410, 30418, 30420])
-#
-#rng = np.random.default_rng(7)
-#rng.shuffle(source_ids)
-#source_ids = pd.Series(source_ids)
-#
-#split_ids = {
-#    "train": source_ids[:5],
-#    "test": source_ids[5:],
-#}
-#
-#dataset = {mode: to_dataset(shot_ids) for mode, shot_ids in split_ids.items()}
-#
-## extract solution
-#psi = dataset["test"].psi.data.reshape((dataset["test"].sizes["time"], -1))
-#solution = pd.DataFrame(psi)
-#solution.index.name = "index"
-#shot_index = dataset["test"].shot_index.data
-#solution["Usage"] = [{5: "Public", 6: "Private"}.get(index) for index in shot_index]
-## delete solution from test file
-#dataset["test"] = dataset["test"].drop_vars("psi")
-#
-## write to file
-#path = pathlib.Path().absolute().parent / "fair_mast_data/plasma_equilibrium"
-#path.mkdir(exist_ok=True)
-#dataset["train"].to_netcdf(path / "train.nc")
-#dataset["test"].to_netcdf(path / "test.nc")
-#solution.to_csv(path / "solution.csv")
-
-

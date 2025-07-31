@@ -27,7 +27,8 @@ env/
 #
 
 # Large datasets
-#
-src/magnetics_diagnostic_analysis/data/test.nc
-src/magnetics_diagnostic_analysis/data/train.nc
-src/magnetics_diagnostic_analysis/data/camera_data.pkl
+## NetCDF files (all .nc files)
+src/magnetics_diagnostic_analysis/data/*.nc
+## But keep this specific file
+!src/magnetics_diagnostic_analysis/data/train_test.nc
+!src/magnetics_diagnostic_analysis/data/test_test.nc
