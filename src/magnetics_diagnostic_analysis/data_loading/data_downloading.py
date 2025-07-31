@@ -55,7 +55,7 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
 
 
 
-def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
+def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
     Warning: This function is deprecated and will be removed in future versions.
     The aim was to build a dataset with shot_id as a dimension, but aligning problems have occurred.
@@ -89,10 +89,12 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
 
         time_dim_name = f"time_{shot}"      # Create a unique name for a given shot
         shot_signals = []
-        print("time_dim_name = ", time_dim_name, "\n")
+        if verbose:
+            print("time_dim_name = ", time_dim_name, "\n")
 
         for group in groups:
-            print("\n", f"Loading group {group} for shot {shot}...", "\n")
+            if verbose:
+                print("\n", f"Loading group {group} for shot {shot}...", "\n")
             try:
                 data = to_dask(shot, group)
             except (IndexError, KeyError):
@@ -107,7 +109,8 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
             other_time_coords = set()
             
             for var_name, da in data.data_vars.items():
-                print(f"Processing variable: {var_name}")
+                if verbose:
+                    print(f"Processing variable: {var_name}")
                 # Find the time dimension (could be "time", "time_saddle", etc.)
                 time_dim = next((d for d in da.dims if d.startswith("time")), None)
                 
@@ -130,7 +133,8 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
             cleaned = cleaned.swap_dims({'time': time_dim_name})
             cleaned = cleaned.assign_coords({time_dim_name: time_ref.values})
             cleaned = cleaned.transpose(time_dim_name, ...)
-            print(cleaned)
+            if verbose:
+                print(cleaned)
 
             shot_signals.append(cleaned)
             
@@ -153,7 +157,7 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
 
 
 
-def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_state: bool = False) -> xr.Dataset:
+def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
     Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
     
@@ -185,7 +189,8 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
         signal = []
 
         for group in groups:
-            #print("\n", f"Loading group {group} for shot {shot}...", "\n")
+            if verbose:
+                print("\n", f"Loading group {group} for shot {shot_id}...", "\n")
             try:
                 data = to_dask(shot_id, group).interp({"time": time_ref})
             except (IndexError, KeyError):
@@ -198,7 +203,8 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
             
             other_times = set()
             for var in data.data_vars:
-                #print(f"Processing variable: {var}")
+                if verbose:
+                    print(f"Processing variable: {var}")
                 time_dim = next((dim for dim in data[var].dims if dim.startswith('time')), 'time')
 
                 if time_dim != "time":
@@ -258,7 +264,12 @@ def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[i
             "test": shots[split_id:],
         }
         #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, permanent_state=permanent_state) for mode, shot_ids in split_ids.items()}
-        dataset = {mode: build_level_2_data_all_shots(shot_ids, groups=groups, permanent_state=permanent_state) for mode, shot_ids in split_ids.items()}
+        dataset = {mode: build_level_2_data_all_shots(
+            shot_ids, 
+            groups=groups, 
+            permanent_state=permanent_state,
+            verbose=True
+            ) for mode, shot_ids in split_ids.items()}
         print("Saving to netCDF...")
         dataset["train"].to_netcdf(filename_train)
         dataset["test"].to_netcdf(filename_test)
