@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import random as rd
+import time
 
 import pathlib
 import tqdm
@@ -54,6 +55,31 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
     )
 
 
+def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1):
+    """
+    Retry loading a shot's data as a Dask Dataset with exponential backoff.
+
+    Parameters
+    shot_id: Shot ID to retrieve data for.
+    group: Diagnostic group to retrieve data from.
+    retries: Number of retry attempts (default is 3).
+    delay: Delay in seconds between retries (default is 5).
+
+    Returns
+    xr.Dataset
+        The Dask Dataset for the specified shot and group.
+    or Error
+    """
+    for attempt in range(retries):
+        try:
+            return to_dask(shot_id, group)
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"Retrying connection to {shot_id} in group {group} (attempt {attempt + 1}/{retries})")
+                time.sleep(delay)
+            else:
+                raise e
+            
 
 def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
@@ -96,7 +122,7 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
             if verbose:
                 print("\n", f"Loading group {group} for shot {shot}...", "\n")
             try:
-                data = to_dask(shot, group)
+                data = retry_to_dask(shot, group)
             except (IndexError, KeyError):
                 print(f"Group {group} not found for shot {shot}. Skipping.")
                 continue
@@ -192,7 +218,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
             if verbose:
                 print("\n", f"Loading group {group} for shot {shot_id}...", "\n")
             try:
-                data = to_dask(shot_id, group).interp({"time": time_ref})
+                data = retry_to_dask(shot_id, group).interp({"time": time_ref})
             except (IndexError, KeyError):
                 print(f"\nGroup {group} not found for shot {shot_id}. Skipping.")
                 continue
