@@ -255,7 +255,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
 
 
 
-def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], permanent_state: bool, random_seed: int = 42) -> None:
+def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], permanent_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
     """
     Load data from cache or build it if not available.
 
@@ -294,7 +294,7 @@ def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[i
             shot_ids, 
             groups=groups, 
             permanent_state=permanent_state,
-            verbose=True
+            verbose=verbose
             ) for mode, shot_ids in split_ids.items()}
         print("Saving to netCDF...")
         dataset["train"].to_netcdf(filename_train)
@@ -333,7 +333,9 @@ if __name__ == "__main__":
         train_test_rate=train_test_rate, 
         shots=shots, groups=groups, 
         permanent_state=permanent_state, 
-        random_seed=random_seed)
+        random_seed=random_seed,
+        verbose=False
+        )
     
     print("Data loading completed.\n")
     

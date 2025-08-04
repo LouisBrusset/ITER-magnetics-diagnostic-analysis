@@ -1,4 +1,5 @@
 import sys
+import json
 import random as rd
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -11,7 +12,13 @@ if __name__ == "__main__":
     random_seed = 42
     campaign_number = ""
 
-    shots = shot_list(campaign=campaign_number, quality=True)
+    # shots = shot_list(campaign=campaign_number, quality=True)
+
+    path = Path(__file__).parent.parent / "results" / "result_lists_magnetics.json"
+    with open(path, "r") as f:
+        data = json.load(f)
+        shots = data["good_shot_ids"]
+
     rd.seed(random_seed)
     rd.shuffle(shots)
     shots = shots[:n_samples]
@@ -21,12 +28,13 @@ if __name__ == "__main__":
     
     load_data(
         shots=shots,
-        groups=["summary", "magnetics"],
-        permanent_state=True,
-        train_test_rate=0.3333,
+        groups=["magnetics"],
+        permanent_state=False,
+        train_test_rate=0.1,
         random_seed=random_seed,
         file_path="src/magnetics_diagnostic_analysis/data/",
-        suffix="_mscred"
+        suffix="_mscred",
+        verbose=False
     )
 
     print("Data loading completed.")

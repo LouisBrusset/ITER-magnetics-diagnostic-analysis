@@ -11284,7 +11284,7 @@
         "30470",
         "30471"
     ],
-    "goobad_vars_ids": [
+    "good_vars_ids": [
         "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M01",
         "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M02",
         "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M03",
