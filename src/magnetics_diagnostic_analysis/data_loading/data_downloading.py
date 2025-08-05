@@ -51,7 +51,7 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
     """
     return xr.open_zarr(
         f"https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr",
-        group=group,
+        group=group
     )
 
 
@@ -103,7 +103,11 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
     dataset = []
 
     for shot in tqdm.tqdm(shots, desc="Loading shots", total=len(shots)):
-        summary = to_dask(shot, "summary")
+        try:
+            summary = retry_to_dask(shot, "summary")
+        except (IndexError, KeyError):
+            print(f"Issue on 'summary' for shot {shot}")
+            continue
         ip = summary['ip']
         time_ip = summary['time']
 
@@ -199,7 +203,11 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
     dataset = []
 
     for shot_index, shot_id in tqdm.tqdm(enumerate(shots), desc="Loading shots", total=len(shots)):
-        ref = to_dask(shot_id, "summary")
+        try:
+            ref = retry_to_dask(shot_id, "summary")
+        except (IndexError, KeyError):
+            print(f"Issue on 'summary' for shot {shot_id}")
+            continue
         ip_ref = ref['ip']
         time = ref.time
 
