@@ -12,7 +12,23 @@ import string
 import re
 
 
+"""
+Argument parser
 
+Thanks to argparse, we can easily set parameters from the terminal.
+--ts_type: (str) type of time series, node or link
+--step_max: (int) maximum step in ConvLSTM
+--gap_time: (int) gap time between each segment
+--win_size: (list[int]) window size of each segment
+--min_time: (int) minimum time point
+--max_time: (int) maximum time point
+--train_start_point: (int) train start point
+--train_end_point: (int) train end point
+--test_start_point: (int) test start point
+--test_end_point: (int) test end point
+--raw_data_path: (str) path to load raw data
+--save_data_path: (str) path to save data
+"""
 parser = argparse.ArgumentParser(description = 'Signature Matrix Generator')
 parser.add_argument('--ts_type', type = str, default = "node",
 				   help = 'type of time series: node or link')
@@ -20,7 +36,7 @@ parser.add_argument('--step_max', type = int, default = 5,
 				   help = 'maximum step in ConvLSTM')
 parser.add_argument('--gap_time', type = int, default = 10, # tride width...
 				   help = 'gap time between each segment')
-parser.add_argument('--win_size', type = int, default = [10, 30, 60],
+parser.add_argument('--win_size', type = list[int], default = [10, 30, 60],
 				   help = 'window size of each segment')
 parser.add_argument('--min_time', type = int, default = 0,
 				   help = 'minimum time point')

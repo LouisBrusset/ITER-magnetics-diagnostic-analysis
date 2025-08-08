@@ -14,10 +14,3 @@ import matplotlib.pyplot as plt
 # Local imports
 # None
 
-def configure_plots():
-    """Configure les paramètres par défaut des visualisations."""
-    plt.rcParams["font.family"] = "sans"
-    plt.rcParams["font.size"] = 8
-    sns.set_palette('muted')
-
-configure_plots()

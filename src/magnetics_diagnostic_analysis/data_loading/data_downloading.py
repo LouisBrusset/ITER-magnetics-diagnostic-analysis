@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+import fsspec
+import zarr
 import random as rd
 import time
 
@@ -53,6 +55,7 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
         f"https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr",
         group=group
     )
+
 
 
 def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1):
@@ -281,8 +284,8 @@ def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[i
 
     path = pathlib.Path().absolute() / file_path
     path.mkdir(exist_ok=True)
-    filename_train = path / f"train{suffix}.nc"
-    filename_test = path / f"test{suffix}.nc"
+    filename_train = path / f"train_{'_'.join(groups)}{suffix}.nc"
+    filename_test = path / f"test_{'_'.join(groups)}{suffix}.nc"
 
     try:
         with open(filename_train, "rb") as ftrain, open(filename_test, "rb") as ftest:
@@ -319,21 +322,21 @@ if __name__ == "__main__":
     random_seed = 42
     campaign_number = ""
 
-    shots = shot_list(campaign=campaign_number, quality=True)
-    rd.seed(random_seed)
-    rd.shuffle(shots)
-    shots = shots[:n_samples]
+    #shots = shot_list(campaign=campaign_number, quality=True)
+    #rd.seed(random_seed)
+    #rd.shuffle(shots)
+    #shots = shots[:n_samples]
+    
+    shots = [15585, 15212, 15010, 14998, 30410, 30418, 30420]
     print("Chosen shots: \n", shots)
     print("Type of shots: ", type(shots))
 
-
-    #shots = [15585, 15212, 15010, 14998, 30410, 30418, 30420]
 
     groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
     permanent_state = False
     train_test_rate = 0.3
     file_path = "src/magnetics_diagnostic_analysis/data"
-    suffix = "_test"
+    suffix = "_test_2"
 
     load_data(
         file_path=file_path, 
