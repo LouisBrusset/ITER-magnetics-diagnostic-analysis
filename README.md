@@ -1,136 +1,187 @@
-# ITER-magnetics-diagnostic-analysis
-Final project that I have done for ITER Organization (IO) during my 6-month internship.
+# ITER Magnetics Diagnostic Analysis
 
+A Python package for detecting faulty signals in magnetics diagnostics using self-supervised learning techniques. This project was developed during a 6-month internship at ITER Organization (IO).
 
+## 🔬 Overview
 
+This package provides tools and algorithms for analyzing magnetics diagnostic data from tokamak experiments, specifically designed to identify anomalies and faulty signals using advanced machine learning techniques including:
 
+- **MSCRED** (Multi-Scale Convolutional Recurrent Encoder-Decoder)
+- **VAE** (Variational Autoencoder) 
+- Traditional anomaly detection methods
 
-# ITER-pendulum-physics-autoencoder
-Try to recover the physics of an oscillating pendulum (ideal then amortized, simple then double) thanks to the embedded space of an Auto-Encoder.
+## Table of Contents
 
-## Description
+1. [Overview](#-overview)
+2. [Package Structure](#-package-structure)
+3. [Getting Started](#-getting-started)
+   - [Prerequisites](#prerequisites)
+   - [Installation](#installation)
+4. [Usage](#-usage)
+   - [Quick Start](#quick-start)
+   - [Data Loading](#data-loading)
+5. [Development](#-development)
+   - [Running Tests](#running-tests)
+   - [Code Formatting](#code-formatting)
+   - [Type Checking](#type-checking)
+6. [Data Source](#-data-source)
+7. [Contributing](#-contributing)
+8. [License](#-license)
+9. [Author](#-author)
+10. [Acknowledgments](#-acknowledgments)
+11. [References](#-references)
 
-This project contains a number of Jupyter notebooks designed to introduce different self-supervised machine learning architecture to recover the motion of a pendulum. Using synthetized data from ODE simulation in this repositories too, we will be able to recover physics parameters of the governing equations.
+## 📦 Package Structure
 
-## Data Source
+- **`data_loading/`** - Data downloading and preprocessing utilities
+- **`data_analysis/`** - Analysis tools and Jupyter notebooks
+- **`ml_tools/`** - Machine learning utilities (early stopping, etc.)
+- **`project_mscred/`** - MSCRED implementation for anomaly detection
+- **`project_vae/`** - VAE implementation for anomaly detection
 
-The data comes from non linear pendulum simulation.
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.11
-- [uv](https://github.com/astral-sh/uv) - A faster and more reliable Python package installer and resolver
+- Python 3.9-3.11 (Python 3.11 recommended)
+- Virtual environment manager (venv, conda, uv etc.)
 
 ### Installation
 
-1. Clone the repository
-
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ITER-pendulum-physics-autoencoder.git
+   git clone https://github.com/LouisBrusset/ITER-magnetics-diagnostic-analysis.git
+   cd ITER-magnetics-diagnostic-analysis
    ```
 
-2. Navigate to the project directory
-
+2. **Create and activate virtual environment**
    ```bash
-   cd ITER-pendulum-physics-autoencoder
-   ```
-
-3. Install [uv](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) if you don't have it already
-
-   ```bash
+   # Using uv
+   python -m pip install --user pipx
+   python -m pipx ensurepath
    pipx install uv
-   ```
-
-4. Create a virtual environment and install dependencies using uv
-
-   ```bash
-   uv venv
-   uv pip install -e .
-   ```
-
-5. Activate the virtual environment
-
-   ```bash
+   pipx --version
+   uv --version
+   uv venv --python 3.11
+    
+   # Using venv
+   python -m venv .venv
+   
    # On Windows
-   .venv\Scripts\activate
-
-   # On Unix or MacOS
+   source .venv\Scripts\activate
+   
+   # On Unix/MacOS
    source .venv/bin/activate
    ```
 
-## Usage
+3. **Install the package**
+   ```bash
+   # Dev mod
+   pip install -e .
 
-### Running Jupyter Notebooks
+   #Without dev dependencies
+   pip install .
+   ```
 
-To run the Jupyter notebooks, make sure you've activated your virtual environment, then:
+## 📈 Usage
 
-```bash
-# In VSCode
-code .
-# in your browser
-jupyter lab --notebook-dir notebooks/
+### Quick Start
+
+```python
+import magnetics_diagnostic_analysis as mda
+
+# Get list of shots from M9 campaign
+shots = mda.shot_list("M9")
+
+# Load data for analysis
+mda.load_data(
+    file_path="data/",
+    suffix="_analysis", 
+    train_test_rate=0.8,
+    shots=shots[:10],
+    groups=["magnetics"],
+    permanent_state=True
+)
+
+# Initialize early stopping for training
+early_stop = mda.EarlyStopping(patience=10)
 ```
 
-This will open a browser window with the Jupyter interface where you can select and run any of the notebooks.
+### Data Loading
 
-### Available Notebooks
+```python
+from magnetics_diagnostic_analysis.data_loading import shot_list, load_data
 
-1. **test-data-creation-simple-non-amortized** - see name.
-2. **test-data-creation-simple-non-amortized for hnn** - see name.
-3. **test-data-creation-simple-amortized** - see name.
-4. **test-data-creation-double-non-amortized** - see name.
-5. **test-data-creation-double-amortized** - see name.
+# Get shots with specific criteria
+good_shots = shot_list(campaign="M9", quality=True)
 
-6. **test-sinus** - Test some functions to dertermine the pulsation of a cyclique motion in the simpliest way.
-7. **test-pi-ae** - Physics-informed Autoencoder.
-8. **test-latent-ode** - Autoencoder with an ODE simulation in the laten space.
-9. **test-latent-ode-2** - Idem.
-10. **test-invertible-ae** - normalizing flow technics with volume conservation.
-11. **test-vae** - Variational Autoencoder.
-12. **test-hamiltonian-nn** - Hamiltonian Neural Network.
-13. **test-hamiltonian-nn 2** - Idem.
-14. **test-hamiltonian-nn 3** - Idem.
+# Build dataset for specific shots
+from magnetics_diagnostic_analysis.data_loading import build_level_2_data_per_shot
 
+dataset = build_level_2_data_per_shot(
+    shots=good_shots[:5],
+    groups=["magnetics", "efit"],
+    permanent_state=True
+)
+```
 
-## License
+## 🔧 Development
 
-Not any licence for this project.
-
-
-
-
-# Nom du projet
-
-Une courte description claire et concise de ce que fait votre projet.
-
-## Table des matières
-
-- [À propos](#à-propos)
-- [Fonctionnalités](#fonctionnalités)
-- [Installation](#installation)
-- [Utilisation](#utilisation)
-- [Contribuer](#contribuer)
-- [Licence](#licence)
-- [Contact](#contact)
-- [Remerciements](#remerciements)
-
-## À propos
-
-Expliquez le contexte du projet : pourquoi il existe, à quoi il sert, et éventuellement ses objectifs.
-
-## Fonctionnalités
-
-- ✅ Fonction 1
-- ✅ Fonction 2
-- 🔧 Fonction en développement
-
-## Installation
-
-Instructions pour installer le projet localement. Par exemple :
+### Running Tests
 
 ```bash
-git clone https://github.com/votre-utilisateur/nom-du-projet.git
-cd nom-du-projet
-npm install
+pytest tests/
+```
+
+### Code Formatting
+
+```bash
+black src/
+flake8 src/
+```
+
+### Type Checking
+
+```bash
+mypy src/
+```
+
+## 📊 Data Source
+
+The data comes from the MAST (Mega Amp Spherical Tokamak) experiment, accessible through:
+- **MAST Data Portal**: https://mastapp.site/
+- **Campaign**: M9 (primary focus)
+- **Diagnostics**: Summary, Magnetics, EFM (EFIT reconstructions)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the terms specified in the LICENSE file.
+
+## 👨‍💻 Author
+
+**Louis Brusset**
+- Email: louis.brusset@etu.minesparis.psl.eu
+- Institution: École Nationale Supérieure des Mines de Paris
+- Organization: ITER Organization (IO)
+
+## 🙏 Acknowledgments
+
+- ITER Organization for providing the internship opportunity
+- MAST team for data access and support
+- École des Mines de Paris for academic supervision and providing knowlodge
+
+## 📚 References
+
+- [MAST Experiment Documentation](https://mastapp.site/)
+- [ITER Organization](https://www.iter.org/)
+- [MSCRED](https://arxiv.org/abs/1811.08055): A Deep Neural Network for Multiscale Time-series Anomaly Detection
+- [VAE](https://arxiv.org/abs/1807.10300): Variational Autoencoders for Anomaly Detection
+- [MAST VAE code experimentation by Samuel Jackson](https://github.com/samueljackson92/mast-signal-validation)
