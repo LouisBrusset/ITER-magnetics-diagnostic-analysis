@@ -30,5 +30,5 @@ env/
 ## NetCDF files (all .nc files)
 src/magnetics_diagnostic_analysis/data/*.nc
 ## But keep this specific file
-!src/magnetics_diagnostic_analysis/data/train_test.nc
-!src/magnetics_diagnostic_analysis/data/test_test.nc
+!src/magnetics_diagnostic_analysis/data/train_foo.nc
+!src/magnetics_diagnostic_analysis/data/test_foo.nc
