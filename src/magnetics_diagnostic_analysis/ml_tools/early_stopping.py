@@ -28,9 +28,9 @@ class EarlyStopping:
         self.patience = patience
         self.best_loss = None
         self.counter = 0
-        self.best_state_dict = None  # <- Ajout
+        self.best_state_dict = None
 
-    def check_stop(self, current_loss: float, model) -> bool:
+    def check_stop(self, current_loss: float, model: torch.nn.Module) -> bool:
         """
         Check if training should be stopped based on the current loss.
 
@@ -54,7 +54,7 @@ class EarlyStopping:
 
         return self.counter >= self.patience
 
-    def restore_best_weights(self, model) -> None:
+    def restore_best_weights(self, model: torch.nn.Module) -> None:
         """
         Restore the model weights from the best epoch.
 
