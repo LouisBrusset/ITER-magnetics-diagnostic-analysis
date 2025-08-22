@@ -2,9 +2,8 @@ import sys
 import json
 import random as rd
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
 
-from data_downloading.data_downloading import load_data, shot_list
+from magnetics_diagnostic_analysis.data_downloading.data_downloading import load_data
 
 if __name__ == "__main__":
 
@@ -37,4 +36,4 @@ if __name__ == "__main__":
         verbose=False
     )
 
-    print("Data loading completed.")
+    print("Data loading for MSCRED completed.")

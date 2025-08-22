@@ -12,7 +12,7 @@ import requests
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent))
+
 from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import ip_filter
 
 
@@ -84,7 +84,7 @@ def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1):
                 raise e
             
 
-def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_state: bool = False, verbose: bool = False) -> xr.Dataset:
+def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
     Warning: This function is deprecated and will be removed in future versions.
     The aim was to build a dataset with shot_id as a dimension, but aligning problems have occurred.
@@ -92,12 +92,12 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
     ==============
 
     
-    Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
+    Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
     
     Parameters
     shots: List of shot IDs to retrieve data for.
     groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
-    permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
+    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
 
     Return
     An xarray Dataset containing the requested diagnostic data.
@@ -114,7 +114,7 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
         ip = summary['ip']
         time_ip = summary['time']
 
-        if permanent_state:
+        if steady_state:
             mask, _, _ = ip_filter(ip.values, filter='default', min_current=4.e4)
             time_ref = time_ip[mask]
         else:
@@ -190,14 +190,14 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], permanent_s
 
 
 
-def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_state: bool = False, verbose: bool = False) -> xr.Dataset:
+def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
-    Retrieve specified groups of diagnostics from shots in the M9 campaign during permanent state or not.
+    Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
     
     Parameters
     shots: List of shot IDs to retrieve data for.
     groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
-    permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
+    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
 
     Return
     An xarray Concatenated dataset containing the requested diagnostic data, aligned on 'time' with 'shot_index' and 'shot_id'.
@@ -214,7 +214,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
         ip_ref = ref['ip']
         time = ref.time
 
-        if permanent_state:
+        if steady_state:
             mask, _, _ = ip_filter(ip_ref.values, filter='default', min_current=4.e4)
             time_ref = time[mask]
         else:
@@ -266,7 +266,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], permanent_
 
 
 
-def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], permanent_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
+def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], steady_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
     """
     Load data from cache or build it if not available.
 
@@ -274,7 +274,7 @@ def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[i
     train_test_rate: Proportion of shots to use for training (1 - test).
     shots: List of shot IDs to retrieve data for.
     groups: List of diagnostic groups to retrieve data from.
-    permanent_state: If True, only retrieve shots during the permanent state phase of the campaign.
+    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
     random_seed: Seed for random number generator to shuffle shots.
     
     Return
@@ -300,16 +300,59 @@ def load_data(file_path: str, suffix: str, train_test_rate: float, shots: list[i
             "train": shots[:split_id],
             "test": shots[split_id:],
         }
-        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, permanent_state=permanent_state) for mode, shot_ids in split_ids.items()}
+        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, steady_state=steady_state) for mode, shot_ids in split_ids.items()}
         dataset = {mode: build_level_2_data_all_shots(
             shot_ids, 
             groups=groups, 
-            permanent_state=permanent_state,
+            steady_state=steady_state,
             verbose=verbose
             ) for mode, shot_ids in split_ids.items()}
         print("Saving to netCDF...")
         dataset["train"].to_netcdf(filename_train)
         dataset["test"].to_netcdf(filename_test)
+        print("netCDF ok")
+
+    return None
+
+
+def load_data(file_path: str, suffix: str, shots: list[int], groups: list[str], steady_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
+    """
+    Load data from cache or build it if not available.
+
+    Parameters
+    file_path: Path to the directory where the data files are stored.
+    suffix: Suffix to append to the file names.
+    shots: List of shot IDs to retrieve data for.
+    groups: List of diagnostic groups to retrieve data from.
+    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
+    random_seed: Seed for random number generator to shuffle shots.
+    verbose: If True, print additional information during processing.
+
+    Return
+    An xarray Dataset containing the requested diagnostic data.
+    """
+
+    path = Path(__file__).absolute().parent.parent.parent.parent / file_path
+    path.mkdir(exist_ok=True)
+    filename_data = path / f"data_{'_'.join(groups)}_{suffix}.nc"
+
+    try:
+        with open(filename_data, "rb") as fdata:
+            print("Files already exist!")
+    except FileNotFoundError:
+        # rng = np.random.default_rng(random_seed)
+        # rng.shuffle(shots)
+        pass
+        
+        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, steady_state=steady_state) for mode, shot_ids in split_ids.items()}
+        dataset = build_level_2_data_all_shots(
+            shots, 
+            groups=groups, 
+            steady_state=steady_state,
+            verbose=verbose
+        )
+        print("Saving to netCDF...")
+        dataset.to_netcdf(filename_data)
         print("netCDF ok")
 
     return None
@@ -321,7 +364,6 @@ if __name__ == "__main__":
     n_samples = 12       # Number of shots to load
     random_seed = 42
     campaign_number = ""
-
     #shots = shot_list(campaign=campaign_number, quality=True)
     #rd.seed(random_seed)
     #rd.shuffle(shots)
@@ -333,24 +375,22 @@ if __name__ == "__main__":
 
 
     groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
-    permanent_state = False
-    train_test_rate = 0.3
-    file_path = "src/magnetics_diagnostic_analysis/data"
-    suffix = "_test_2"
+    steady_state = False
+    suffix = "test_2"
+    file_path = f"data/raw/{suffix}"
 
     load_data(
         file_path=file_path, 
         suffix=suffix,
-        train_test_rate=train_test_rate, 
         shots=shots, groups=groups, 
-        permanent_state=permanent_state, 
+        steady_state=steady_state, 
         random_seed=random_seed,
         verbose=False
         )
     
     print("Data loading completed.\n")
     
-    path = pathlib.Path().absolute() / file_path / f"train{suffix}.nc"
+    path = Path(__file__).absolute().parent.parent.parent.parent / file_path / f"data_{'_'.join(groups)}_{suffix}.nc"
     with (xr.open_dataset(path) as train):
         #subset = train.sel(shot_id=shots[])
         data = train.load()

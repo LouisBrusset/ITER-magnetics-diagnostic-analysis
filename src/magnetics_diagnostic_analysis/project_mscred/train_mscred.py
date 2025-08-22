@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     mscred = MSCRED(
         encoder_in_channel=3,
-        deep_channel_sizes=[32, 64, 128],
+        deep_channel_sizes=[16, 32, 64],
         lstm_num_layers=1,
         lstm_timesteps=5,
         lstm_effective_timesteps=[1, 3, 4]

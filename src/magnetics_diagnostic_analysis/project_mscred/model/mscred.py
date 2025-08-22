@@ -402,6 +402,11 @@ class MSCRED(nn.Module):
         else:
             raise AttributeError("ConvLSTM module does not exist.")
 
+    # def forward(self, x):
+    #     # Use gradient checkpointing to save GPU memory
+    #     from torch.utils.checkpoint import checkpoint
+    #     return checkpoint(self._forward, x)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass for the MSCRED model
