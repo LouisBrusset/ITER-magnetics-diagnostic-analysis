@@ -5,7 +5,7 @@ A package for finding faulty signals in diagnostics using self-supervised learni
 """
 
 # Import main sub-packages
-from . import data_loading
+from . import data_downloading
 from . import data_analysis
 from . import ml_tools
 from . import project_mscred
@@ -17,7 +17,7 @@ __author__ = "Louis Brusset"
 __email__ = "louis.brusset@etu.minesparis.psl.eu"
 
 # Expose main functionality at package level
-from .data_loading import (
+from .data_downloading import (
     shot_list,
     load_data,
     build_level_2_data_per_shot,
@@ -27,7 +27,7 @@ from .data_loading import (
 from .ml_tools import EarlyStopping
 
 __all__ = [
-    "data_loading",
+    "data_downloading",
     "data_analysis", 
     "ml_tools",
     "project_mscred",
