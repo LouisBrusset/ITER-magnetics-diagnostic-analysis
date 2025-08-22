@@ -1,0 +1,136 @@
+import numpy as np
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+from pathlib import Path
+
+from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
+from magnetics_diagnostic_analysis.ml_tools.metrics import mscred_loss_function
+from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling
+from magnetics_diagnostic_analysis.project_mscred.utils.dataloader_building import create_data_loaders
+from magnetics_diagnostic_analysis.project_mscred.model.mscred import MSCRED
+
+
+def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: torch.optim.Optimizer, epochs: int, device: torch.device, valid_loader: torch.utils.data.DataLoader = None):
+    torch.cuda.empty_cache()
+    model = model.to(device)
+    print("------training on {}-------".format(device))
+
+    early_stopping = EarlyStopping(min_delta=0.01, patience=6)
+    lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.2, patience=3, min_lr=1e-6, min_delta=0.001)
+
+    history = {'train_loss': [], 'valid_loss': []}
+
+    for epoch in range(epochs):
+        model.reset_lstm_hidden_states()
+
+        # Training
+        model.train()
+        train_loss_sum, n = 0.0, 0
+        for x in tqdm(dataLoader):
+            x = x.to(device)
+            optimizer.zero_grad()
+
+            x_recon = model(x)
+            loss = mscred_loss_function(x_recon, x)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+
+            train_loss_sum += loss.item()
+            n += 1
+            
+        train_loss = train_loss_sum / n
+        history['train_loss'].append(train_loss)
+
+
+        # Validation (if valid_loader is not None)
+        valid_loss = None
+        if valid_loader is not None:
+            model.eval()
+            valid_loss_sum, valid_n = 0.0, 0
+            with torch.no_grad():
+                for x_valid in valid_loader:
+                    x_valid = x_valid.to(device)
+                    x_recon_valid = model(x_valid)
+                    loss_valid = mscred_loss_function(x_recon_valid, x_valid)
+                    valid_loss_sum += loss_valid.item()
+                    valid_n += 1
+            valid_loss = valid_loss_sum / valid_n
+            history['valid_loss'].append(valid_loss)
+
+        current_loss = valid_loss if valid_loader is not None else train_loss
+
+        print("[Epoch %d/%d] [Train loss: %f] %s" % (
+            epoch+1, epochs, train_loss, 
+            f"[Val loss: {valid_loss:.4f}]" if valid_loss is not None else "No valid"
+        ))
+        
+        if early_stopping.check_stop(current_loss, model):
+            print(f"Early stopping at epoch {epoch + 1} with loss {current_loss:.4f}")
+            early_stopping.restore_best_weights(model)
+            break
+
+        lr_scheduler.step(current_loss)
+
+    return history, model
+
+def plot_history(history_train: list, history_valid: list) -> None:
+    plt.figure(figsize=(8, 5))
+    plt.plot(history_train, 'b-', linewidth=2, label='Train Loss')
+    plt.plot(history_valid, 'r-', linewidth=2, label='Valid Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    path = Path(__file__).absolute().parent.parent.parent.parent / "results/figures/mscred/last_training_history.png"
+    plt.savefig(path)
+    return None
+
+
+if __name__ == "__main__":
+    # Example usage
+    device = select_torch_device()
+
+    data_foo = np.random.randn(2000, 3, 32, 32)  # Same shape as the window_matrix
+    train_loader, valid_loader, test_loader = create_data_loaders(
+        data=data_foo,
+        batch_size=10,
+        set_separations=[12000, 15000],
+        gap_time=10,
+        device=device
+    )
+
+    mscred = MSCRED(
+        encoder_in_channel=3,
+        deep_channel_sizes=[32, 64, 128],
+        lstm_num_layers=1,
+        lstm_timesteps=5,
+        lstm_effective_timesteps=[1, 3, 4]
+    )
+
+    n_epochs = 50
+    optimizer = torch.optim.Adam(mscred.parameters(), lr = 1.0e-3)
+    path = Path(__file__).absolute().parent.parent.parent.parent / "results/model_params/mscred"
+    model_name_continue = "model0"
+    model_name_register = "model1"
+
+    continue_training = False
+    if continue_training:
+        mscred.load_state_dict(torch.load(path / f"{model_name_continue}.pth"))
+    
+    # Train
+    history, trained_mscred = train(
+        mscred, 
+        train_loader, 
+        optimizer, 
+        epochs=n_epochs, 
+        device=device, 
+        valid_loader=valid_loader
+    )
+    torch.save(trained_mscred.state_dict(), path / f"{model_name_register}.pth")
+
+    plot_history(history['train_loss'], history['valid_loss'])

@@ -1,11 +1,14 @@
 """
 Machine Learning Tools Module
 
-This module contains utilities for machine learning tasks including early stopping.
+Utilities for machine learning and training routines (early stopping, metrics, etc).
 """
 
-from .train_callbacks import EarlyStopping
+from .train_callbacks import EarlyStopping, LRScheduling
+from .metrics import mscred_loss_function
 
 __all__ = [
-    "EarlyStopping"
+    "EarlyStopping",
+    "LRScheduling",
+    "mscred_loss_function"
 ]

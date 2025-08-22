@@ -28,12 +28,14 @@ env/
 
 # Large datasets
 ## NetCDF files (all .nc files)
-data/raw/mscred/*.nc
-data/raw/vae/*.nc
-data/preprocessed/mscred/*.nc
-data/preprocessed/vae/*.nc
-data/processed/mscred/*.nc
-data/processed/vae/*.nc
+#data/raw/mscred/*.nc
+#data/raw/vae/*.nc
+#data/preprocessed/mscred/*.nc
+#data/preprocessed/vae/*.nc
+#data/processed/mscred/*.nc
+#data/processed/vae/*.nc
+data/**/*.nc
+data/**/*.npy
 ## But keep this specific file
 !data/raw/train_foo.nc
 !data/raw/test_foo.nc
