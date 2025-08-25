@@ -13,6 +13,7 @@ import requests
 import sys
 from pathlib import Path
 
+from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import ip_filter
 
 
@@ -284,8 +285,8 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
 
     path = pathlib.Path().absolute() / file_path
     path.mkdir(exist_ok=True)
-    filename_train = path / f"train_{'_'.join(groups)}{suffix}.nc"
-    filename_test = path / f"test_{'_'.join(groups)}{suffix}.nc"
+    filename_train = path / f"train_{'_'.join(groups)}_{suffix}.nc"
+    filename_test = path / f"test_{'_'.join(groups)}_{suffix}.nc"
 
     try:
         with open(filename_train, "rb") as ftrain, open(filename_test, "rb") as ftest:
@@ -315,7 +316,7 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
     return None
 
 
-def load_data(file_path: str, suffix: str, shots: list[int], groups: list[str], steady_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
+def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: bool = False) -> None:
     """
     Load data from cache or build it if not available.
 
@@ -332,9 +333,9 @@ def load_data(file_path: str, suffix: str, shots: list[int], groups: list[str], 
     An xarray Dataset containing the requested diagnostic data.
     """
 
-    path = Path(__file__).absolute().parent.parent.parent.parent / file_path
+    path = config.DIR_RAW_DATA
     path.mkdir(exist_ok=True)
-    filename_data = path / f"data_{'_'.join(groups)}_{suffix}.nc"
+    filename_data = path / config.RAW_DATA_FILE_NAME
 
     try:
         with open(filename_data, "rb") as fdata:
@@ -362,7 +363,7 @@ def load_data(file_path: str, suffix: str, shots: list[int], groups: list[str], 
 if __name__ == "__main__":
 
     n_samples = 12       # Number of shots to load
-    random_seed = 42
+    random_seed = config.RANDOM_SEED
     campaign_number = ""
     #shots = shot_list(campaign=campaign_number, quality=True)
     #rd.seed(random_seed)
@@ -373,24 +374,16 @@ if __name__ == "__main__":
     print("Chosen shots: \n", shots)
     print("Type of shots: ", type(shots))
 
-
-    groups = ["summary", "magnetics", "spectrometer_visible", "pf_active"]
-    steady_state = False
-    suffix = "test_2"
-    file_path = f"data/raw/{suffix}"
-
     load_data(
-        file_path=file_path, 
-        suffix=suffix,
-        shots=shots, groups=groups, 
-        steady_state=steady_state, 
-        random_seed=random_seed,
+        shots=shots, 
+        groups=config.GROUPS, 
+        steady_state=config.STEADY_STATE, 
         verbose=False
         )
     
     print("Data loading completed.\n")
     
-    path = Path(__file__).absolute().parent.parent.parent.parent / file_path / f"data_{'_'.join(groups)}_{suffix}.nc"
+    path = config.DIR_RAW_DATA / config.DATA_FILE_NAME
     with (xr.open_dataset(path) as train):
         #subset = train.sel(shot_id=shots[])
         data = train.load()

@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from pathlib import Path
 
-from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
+from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 from magnetics_diagnostic_analysis.ml_tools.metrics import mscred_loss_function
 from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling
 from magnetics_diagnostic_analysis.project_mscred.utils.dataloader_building import create_data_loaders
@@ -91,46 +91,50 @@ def plot_history(history_train: list, history_valid: list) -> None:
     return None
 
 
-if __name__ == "__main__":
-    # Example usage
-    device = select_torch_device()
+def main():
+    device = config.DEVICE
 
-    data_foo = np.random.randn(2000, 3, 32, 32)  # Same shape as the window_matrix
+
+    data_foo = np.random.randn(2000, *config.DATA_SHAPE)  # Same shape as the window_matrix
+    
     train_loader, valid_loader, test_loader = create_data_loaders(
         data=data_foo,
-        batch_size=10,
-        set_separations=[12000, 15000],
-        gap_time=10,
+        batch_size=config.BATCH_SIZE,
+        set_separations=config.SET_SEPARATIONS,
+        gap_time=config.GAP_TIME,
         device=device
     )
 
     mscred = MSCRED(
-        encoder_in_channel=3,
-        deep_channel_sizes=[16, 32, 64],
-        lstm_num_layers=1,
-        lstm_timesteps=5,
-        lstm_effective_timesteps=[1, 3, 4]
+        encoder_in_channel=config.DATA_SHAPE[0],
+        deep_channel_sizes=config.DEEP_CHANNEL_SIZES,
+        lstm_num_layers=config.LSTM_NUM_LAYERS,
+        lstm_timesteps=config.LSTM_TIMESTEPS,
+        lstm_effective_timesteps=config.LSTM_EFFECTIVE_TIMESTEPS
     )
 
-    n_epochs = 50
-    optimizer = torch.optim.Adam(mscred.parameters(), lr = 1.0e-3)
-    path = Path(__file__).absolute().parent.parent.parent.parent / "results/model_params/mscred"
-    model_name_continue = "model0"
-    model_name_register = "model1"
+    optimizer = torch.optim.Adam(mscred.parameters(), lr = config.FIRST_LEARNING_RATE)
+    model_name_to_continue = "model0"
+    model_name_register = config.BEST_MODEL_NAME
 
     continue_training = False
     if continue_training:
-        mscred.load_state_dict(torch.load(path / f"{model_name_continue}.pth"))
+        mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name_to_continue}.pth"))
     
     # Train
     history, trained_mscred = train(
         mscred, 
         train_loader, 
         optimizer, 
-        epochs=n_epochs, 
-        device=device, 
+        epochs=config.N_EPOCHS, 
+        device=config.DEVICE, 
         valid_loader=valid_loader
     )
-    torch.save(trained_mscred.state_dict(), path / f"{model_name_register}.pth")
+    torch.save(trained_mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}.pth")
 
     plot_history(history['train_loss'], history['valid_loss'])
+
+
+
+if __name__ == "__main__":
+    main()
