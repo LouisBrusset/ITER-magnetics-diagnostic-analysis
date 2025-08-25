@@ -8,11 +8,11 @@ from magnetics_diagnostic_analysis.data_downloading.data_downloading import load
 def data_scraping_mscred():
     # Configuration & Shots choice
     # shots = shot_list(campaign=campaign_number, quality=True)
-    path = Path(__file__).absolute().parent.parent.parent.parent.parent / "notebooks/result_files/all_shots_magnetics/choosen_shots_to_load.json"
+    path = Path(__file__).absolute().parent.parent.parent.parent.parent / "notebooks/result_files/nan_stats_magnetics/result_lists_magnetics_nans.json"
     with open(path, "r") as f:
         data = json.load(f)
         shots = data["good_shot_ids"]
-    shots = shots[:20]  # For testing purpose, we take only 20 shots
+    shots = shots
     print("Chosen shots: \n", shots)
     print("Type of shots: ", type(shots))
 

@@ -131,6 +131,7 @@ def main():
         valid_loader=valid_loader
     )
     torch.save(trained_mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}.pth")
+    #config.update({"BEST_MODEL_NAME": model_name_register})
 
     plot_history(history['train_loss'], history['valid_loss'])
 
