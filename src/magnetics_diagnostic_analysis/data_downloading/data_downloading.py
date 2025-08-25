@@ -3,15 +3,13 @@ import pandas as pd
 import xarray as xr
 import fsspec
 import zarr
-import random as rd
-import time
 
+import time
 import pathlib
 import tqdm
 import requests
 
-import sys
-from pathlib import Path
+
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import ip_filter
