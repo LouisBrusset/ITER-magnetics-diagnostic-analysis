@@ -1,4 +1,5 @@
 from pathlib import Path
+import yaml
 
 from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
 
