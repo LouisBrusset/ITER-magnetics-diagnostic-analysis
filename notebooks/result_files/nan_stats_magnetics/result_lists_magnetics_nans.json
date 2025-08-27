@@ -6322,36 +6322,6 @@
         "ip"
     ],
     "bad_vars_ids": [
-        "b_field_pol_probe_cc_field::XMC_CC/MV/201",
-        "b_field_pol_probe_cc_field::XMC_CC/MV/210",
-        "b_field_pol_probe_cc_field::XMC_CC/MV/220",
-        "b_field_pol_probe_cc_field::XMC_CC/MV/230",
-        "b_field_pol_probe_cc_field::XMC_CC/MV/240",
-        "b_field_pol_probe_ccbv_field::AMB_CCBV10",
-        "b_field_pol_probe_ccbv_field::AMB_CCBV13",
-        "b_field_pol_probe_ccbv_field::AMB_CCBV22",
-        "b_field_pol_probe_obv_field::AMB_OBV10",
-        "b_field_pol_probe_omv_voltage::XMC_OMV/110",
-        "b_field_pol_probe_omv_voltage::XMC_OMV/210",
-        "b_field_pol_probe_omv_voltage::XMC_OMV/310",
-        "b_field_tor_probe_cc_field::XMC_CC/MT/201",
-        "b_field_tor_probe_cc_field::XMC_CC/MT/206",
-        "b_field_tor_probe_cc_field::XMC_CC/MT/212",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M01",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M02",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M03",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M04",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M05",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M06",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M07",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M08",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M09",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M10",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M11",
-        "b_field_tor_probe_saddle_field::ASM_SAD/M12",
-        "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M10",
-        "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M11",
-        "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M12",
-        "flux_loop_flux::AMB_FL/P6L/1"
+        "b_field_pol_probe_ccbv_field::AMB_CCBV13"
     ]
 }
