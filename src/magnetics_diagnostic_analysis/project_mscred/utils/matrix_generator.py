@@ -237,16 +237,18 @@ if __name__ == "__main__":
     gap_time = 10
     normalize = True
 
-    signature_matrices = generate_signature_matrix(
-            data=data_train_with_anomalies,
-            win_size=win_size,
-            min_time=min_time,
-            max_time=max_time,
-            gap_time=gap_time,
-            normalize=normalize,
-            saving=True
-        )
+    #signature_matrices = generate_signature_matrix(
+    #        data=data_train_with_anomalies,
+    #        win_size=win_size,
+    #        min_time=min_time,
+    #        max_time=max_time,
+    #        gap_time=gap_time,
+    #        normalize=normalize,
+    #        saving=True
+    #    )
 
+    path = Path(__file__).absolute().parent.parent.parent.parent.parent / "data/preprocessed/mscred/signature_matrices.npy"
+    signature_matrices = np.load(path)
     sample_times = [1000, 5000, 10000, 15000, 20000]
 
     plot_signature_matrices(

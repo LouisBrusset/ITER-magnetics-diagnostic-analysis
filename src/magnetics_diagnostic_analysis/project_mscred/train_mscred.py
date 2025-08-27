@@ -70,6 +70,7 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
         
         if early_stopping.check_stop(current_loss, model):
             print(f"Early stopping at epoch {epoch + 1} with loss {current_loss:.4f}")
+            print(f"Restoring best weights for model.")
             early_stopping.restore_best_weights(model)
             break
 
@@ -139,4 +140,5 @@ def main():
 
 
 if __name__ == "__main__":
+    torch.backends.cudnn.enabled = False        # problem to fix in the future
     main()
