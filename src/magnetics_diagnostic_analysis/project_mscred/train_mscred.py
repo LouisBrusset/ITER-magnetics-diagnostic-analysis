@@ -93,12 +93,13 @@ def plot_history(history_train: list, history_valid: list) -> None:
 
 def main():
     device = config.DEVICE
+    # data_foo = np.random.randn(2000, *config.DATA_SHAPE)  # Same shape as the window_matrix
 
+    path = config.DIR_PREPROCESSED_DATA / "signature_matrices.npy"
+    data = np.load(path)
 
-    data_foo = np.random.randn(2000, *config.DATA_SHAPE)  # Same shape as the window_matrix
-    
     train_loader, valid_loader, test_loader = create_data_loaders(
-        data=data_foo,
+        data=data,
         batch_size=config.BATCH_SIZE,
         set_separations=config.SET_SEPARATIONS,
         gap_time=config.GAP_TIME,

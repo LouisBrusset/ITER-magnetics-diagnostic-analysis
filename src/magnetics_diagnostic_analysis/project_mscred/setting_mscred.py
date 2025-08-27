@@ -19,27 +19,28 @@ class Config:
 
     ### PyTorch device
     DEVICE = select_torch_device()
+    SEED = 42
 
     ### Important parameters
     DATA_SHAPE = (3, 32, 32)
-    WINDOW_SIZES = [10, 20, 50]
+    WINDOW_SIZES = [10, 30, 60]
     GAP_TIME = 10  # Step to calculate the next window
 
-    DATA_NUMBER = 20000
+    DATA_NUMBER = 40000
     SET_SEPARATIONS = [int(DATA_NUMBER * (1-valid_test_rates[1]) * (1-valid_test_rates[0])), int(DATA_NUMBER * (1-valid_test_rates[1]))]  # Train & Valid and Valid & Test split indices
 
-    DEEP_CHANNEL_SIZES = [16, 32, 64]
+    DEEP_CHANNEL_SIZES = [20, 40, 80]
     LSTM_NUM_LAYERS = 1
-    LSTM_TIMESTEPS = 5
-    LSTM_EFFECTIVE_TIMESTEPS = [1, 3, 4]
+    LSTM_TIMESTEPS = 15
+    LSTM_EFFECTIVE_TIMESTEPS = [1, 2, 3, 6, 7, 8, 11, 12, 13, 14]
 
     ### Hyperparameters
     BATCH_SIZE = 10
-    FIRST_LEARNING_RATE = 0.001
-    WEIGHT_DECAY = 1e-5
+    FIRST_LEARNING_RATE = 0.005
+    WEIGHT_DECAY = 1e-5     # if needed
 
     ### Train parameters
-    N_EPOCHS = 50
+    N_EPOCHS = 100
 
     ### Data scrapping from MAST API
     RANDOM_SEED = 42

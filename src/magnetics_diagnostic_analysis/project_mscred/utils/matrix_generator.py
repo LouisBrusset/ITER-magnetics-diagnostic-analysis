@@ -68,6 +68,11 @@ def generate_signature_matrix(
             np.save(f"{output_path}/matrix_win_{win}.npy", result[:,w_idx,:,:])
 
     print("Signature matrix generation completed!")
+
+    output_path = Path(__file__).absolute().parent.parent.parent.parent.parent / "data/preprocessed/mscred"
+    np.save(f"{output_path}/signature_matrices.npy", result)
+    print(f"All signature matrices saved to {output_path}/signature_matrices.npy")
+    
     return result
 
 def plot_signature_matrices(
