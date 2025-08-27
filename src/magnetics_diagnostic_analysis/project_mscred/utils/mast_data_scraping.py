@@ -3,7 +3,7 @@ import random as rd
 from pathlib import Path
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
-from magnetics_diagnostic_analysis.data_downloading.data_downloading import load_data, select_good_vars
+from magnetics_diagnostic_analysis.data_downloading.data_downloading import load_data
 from magnetics_diagnostic_analysis.data_downloading.data_washing import clean_data
 
 def data_scraping_mscred():
@@ -17,7 +17,7 @@ def data_scraping_mscred():
     print("Type of shots: ", type(shots))
     print("Number of shot: ", len(shots))
 
-    vars = data["good_var_ids"]
+    vars = data["good_vars_ids"]
     print("Chosen vars: \n", vars)
     print("Type of vars: ", type(vars))
     print("Number of var: ", len(vars))
@@ -30,15 +30,16 @@ def data_scraping_mscred():
         steady_state=config.STEADY_STATE,
         verbose=False
     )
-    print("Data loading for MSCRED completed.")
+    print("\nData loading for MSCRED completed.")
 
 
     clean_data(
+        vars=vars,
         group="magnetics",
         suffix=config.SUFFIX,
         verbose=True
     )
-    print("Dataset washing for MSCRED completed.")
+    print("\nDataset washing for MSCRED completed.")
 
 
 

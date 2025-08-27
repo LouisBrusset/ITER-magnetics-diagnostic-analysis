@@ -6,13 +6,13 @@ import json
 from pathlib import Path
 
 def print_dataset_info(ds: xr.Dataset) -> None:
-    print(f"{'Variable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
+    print(f"{'\nVariable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
     for var in ds.data_vars:
         shape = ds[var].shape
         dims = ds[var].dims
         nan_count = ds[var].isnull().sum().values
         print(f"{var:<40} {str(shape):<20} {str(dims):<55} {nan_count:<10}")
-        return None
+    return None
 
 
 def filter_xr_dataset_channels(data_train: xr.Dataset, var_channel_df: pd.DataFrame) -> xr.Dataset:
@@ -59,11 +59,12 @@ def impute_to_zero(data: xr.Dataset) -> xr.Dataset:
     return result
 
 
-def clean_data(group:str = "magnetics", suffix: str = "mscred", verbose: bool = False) -> None:
+def clean_data(vars: list[str], group:str = "magnetics", suffix: str = "mscred", verbose: bool = False) -> None:
     """
     Clean the dataset by removing NaN values and selecting good variables.
 
     Parameters:
+    vars (list[str]): The list of variable names to keep.
     group (str): The group name for the dataset.
     suffix (str): The suffix for the dataset file.
     verbose (bool): If True, print dataset information before and after cleaning.
@@ -72,7 +73,7 @@ def clean_data(group:str = "magnetics", suffix: str = "mscred", verbose: bool = 
     None : We directly saved the cleaned dataset to a NetCDF file.
     """
     # Load the dataset
-    path = Path(__file__).absolute().parent.parent / f"data/raw/{suffix}" / f"data_{group}_{suffix}.nc"
+    path = Path(__file__).absolute().parent.parent.parent.parent / f"data/raw/{suffix}" / f"data_{group}_{suffix}.nc"
     with xr.open_dataset(path) as f:
         #subset = train.sel(shot_id=shots[])
         ds = f.load()
@@ -81,11 +82,11 @@ def clean_data(group:str = "magnetics", suffix: str = "mscred", verbose: bool = 
         print_dataset_info(ds)
 
     # Load the variables and channels to keep
-    path = Path(__file__).absolute().parent.parent.parent.parent / f"notebooks/result_files/all_shots_{group}" / f"result_lists_{group}.json"
-    with open(path, "r") as f:
-        data_var = json.load(f)
-    good_vars_name = data_var["good_vars_ids"]
-    var_channel_df = pd.DataFrame(good_vars_name, columns=["full_name"])
+    #path = Path(__file__).absolute().parent.parent.parent.parent / f"notebooks/result_files/all_shots_{group}" / f"result_lists_{group}.json"
+    #with open(path, "r") as f:
+    #    data_var = json.load(f)
+    #good_vars_name = data_var["good_vars_ids"]
+    var_channel_df = pd.DataFrame(vars, columns=["full_name"])
     var_channel_df[["variable", "channel"]] = var_channel_df["full_name"].str.split("::", expand=True)
 
 
