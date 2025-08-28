@@ -5,6 +5,8 @@ import pandas as pd
 import json
 from pathlib import Path
 
+from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
+
 def print_dataset_info(ds: xr.Dataset) -> None:
     print(f"{'\nVariable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
     for var in ds.data_vars:
@@ -73,7 +75,7 @@ def clean_data(vars: list[str], group:str = "magnetics", suffix: str = "mscred",
     None : We directly saved the cleaned dataset to a NetCDF file.
     """
     # Load the dataset
-    path = Path(__file__).absolute().parent.parent.parent.parent / f"data/raw/{suffix}" / f"data_{group}_{suffix}.nc"
+    path = config.DIR_RAW_DATA / config.RAW_DATA_FILE_NAME
     with xr.open_dataset(path) as f:
         #subset = train.sel(shot_id=shots[])
         ds = f.load()
@@ -103,7 +105,7 @@ def clean_data(vars: list[str], group:str = "magnetics", suffix: str = "mscred",
         print_dataset_info(ds_cleaned)
 
     ### Save the cleaned dataset
-    path_out = Path(__file__).absolute().parent.parent.parent.parent / f"data/preprocessed/{suffix}" / f"data_{group}_{suffix}_cleaned.nc"
+    path_out = config.DIR_PREPROCESSED_DATA / f"data_{group}_{suffix}_cleaned.nc"
     ds_cleaned.to_netcdf(path_out)
 
     return ds_cleaned
