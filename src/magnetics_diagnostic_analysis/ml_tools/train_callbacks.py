@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 
@@ -156,6 +155,74 @@ class GradientClipping:
     
     def on_backward_end(self, model):
         torch.nn.utils.clip_grad_norm_(model.parameters(), self.max_norm)
+
+
+
+class DropOutScheduling:
+    """
+    Adjust dropout rate based on current epoch to gradually reduce dropout to 0.
+    
+    Methods:
+    step(current_epoch: int, n_total_epochs: int) -> Optional[float]:
+        Update dropout rate based on current epoch and return new rate if changed.
+    """
+    def __init__(
+        self,
+        dropout_values: list[float] = None,
+        initial_rate: float = 0.0
+    ) -> None:
+        """
+        Adjust dropout rate based on training progress.
+
+        Parameters:
+        dropout_values: List of dropout values to use throughout training. If provided, initial_rate is ignored.
+        initial_rate: Initial dropout rate (used if dropout_values is None)
+        """
+        if dropout_values is not None:
+            self.dropout_values = dropout_values
+            self.n_steps = len(dropout_values)
+        else:
+            self.dropout_values = None
+            self.initial_rate = initial_rate
+        
+        self.current_rate = None
+        self.last_epoch = -1
+
+    def step(self, current_epoch: int, n_total_epochs: int) -> float | None:
+        """
+        Update dropout rate based on current epoch.
+
+        Parameters:
+        current_epoch: Current epoch number
+        n_total_epochs: Total number of epochs for training
+
+        Returns:
+        float: New dropout rate if changed, None otherwise
+        """
+        if current_epoch <= self.last_epoch:
+            return None
+            
+        self.last_epoch = current_epoch
+        
+        if self.dropout_values is not None:
+            # Use predefined dropout values
+            step_size = n_total_epochs // len(self.dropout_values)
+            step_index = min(current_epoch // step_size, len(self.dropout_values) - 1)
+            new_rate = self.dropout_values[step_index]
+        else:
+            # Linear decay from initial_rate to 0
+            progress = current_epoch / n_total_epochs
+            new_rate = self.initial_rate * (1 - progress)
+        
+        if self.current_rate is None or abs(new_rate - self.current_rate) > 1e-6:
+            self.current_rate = new_rate
+            return new_rate
+        
+        return None
+
+    def get_current_rate(self) -> float:
+        """Get the current dropout rate."""
+        return self.current_rate if self.current_rate is not None else 0.0
 
 
 

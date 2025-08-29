@@ -19,7 +19,7 @@ class Config:
     DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
 
     ### PyTorch device
-    DEVICE = select_torch_device()
+    DEVICE = select_torch_device(temporal_dim="parallel")
     SEED = 42
 
     ### Important parameters
@@ -58,3 +58,8 @@ class Config:
 
 # Global instance
 config = Config()
+
+
+
+# update data number
+#config.update(DATA_NUMBER=10000000)

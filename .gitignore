@@ -36,6 +36,7 @@ env/
 #data/processed/vae/*.nc
 data/**/*.nc
 data/**/*.npy
+data/**/*.pt
 ## But keep this specific file
 !data/raw/train_foo.nc
 !data/raw/test_foo.nc
