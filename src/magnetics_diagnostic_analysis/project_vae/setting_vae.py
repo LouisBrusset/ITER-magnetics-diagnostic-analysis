@@ -27,7 +27,7 @@ class Config:
     N_DIAGS = 96
     DATA_SHAPE = (MAX_SEQ_LENGTH, N_DIAGS)
 
-    DATA_NUMBER = 10000000
+    DATA_NUMBER = 12877819  # Total number of data points to consider
     SET_SEPARATION =  int(DATA_NUMBER * (1-train_test_rates))  # Train & Test split indice
 
     LSTM_NUM_LAYERS = 2
