@@ -82,7 +82,7 @@ def build_windows():
         start_index=config.SET_SEPARATIONS[1], 
         duration_range=(50, 500), 
         n_anomalies=20, 
-        anomaly_strength=3.5, 
+        anomaly_strength=6.5, 
         seed=config.SEED
     )
     #plot_anomalies(data, data_anomalies, anomalies_info, n_series_to_plot=3)

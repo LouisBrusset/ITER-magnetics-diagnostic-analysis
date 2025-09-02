@@ -19,7 +19,7 @@ class Config:
     DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
 
     ### PyTorch device
-    DEVICE = select_torch_device(temporal_dim="parallel")
+    DEVICE = select_torch_device(temporal_dim="sequential")
     SEED = 42
 
     ### Important parameters

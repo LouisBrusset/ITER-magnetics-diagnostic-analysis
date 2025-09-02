@@ -1,142 +1,142 @@
 [
     {
         "series": 19,
-        "start_index": 37270,
+        "start_index": 871958,
         "duration": 398,
         "type": "level_shift",
-        "strength": 3.5
+        "strength": 6.5
     },
     {
         "series": 28,
-        "start_index": 35191,
+        "start_index": 869879,
         "duration": 70,
         "type": "level_shift",
-        "strength": 3.5
+        "strength": 6.5
     },
     {
         "series": 22,
-        "start_index": 30466,
+        "start_index": 963458,
         "duration": 380,
         "type": "level_shift",
-        "strength": 3.5
-    },
-    {
-        "series": 21,
-        "start_index": 38322,
-        "duration": 358,
-        "type": "drift",
-        "strength": 3.5
-    },
-    {
-        "series": 1,
-        "start_index": 36949,
-        "duration": 241,
-        "type": "seasonal_break",
-        "strength": 3.5
-    },
-    {
-        "series": 25,
-        "start_index": 34555,
-        "duration": 71,
-        "type": "spike",
-        "strength": 3.5
-    },
-    {
-        "series": 26,
-        "start_index": 38666,
-        "duration": 219,
-        "type": "seasonal_break",
-        "strength": 3.5
-    },
-    {
-        "series": 14,
-        "start_index": 39167,
-        "duration": 239,
-        "type": "drift",
-        "strength": 3.5
-    },
-    {
-        "series": 18,
-        "start_index": 33005,
-        "duration": 413,
-        "type": "level_shift",
-        "strength": 3.5
-    },
-    {
-        "series": 2,
-        "start_index": 31528,
-        "duration": 356,
-        "type": "level_shift",
-        "strength": 3.5
+        "strength": 6.5
     },
     {
         "series": 3,
-        "start_index": 35393,
-        "duration": 138,
+        "start_index": 876324,
+        "duration": 409,
         "type": "seasonal_break",
-        "strength": 3.5
-    },
-    {
-        "series": 20,
-        "start_index": 37513,
-        "duration": 435,
-        "type": "seasonal_break",
-        "strength": 3.5
-    },
-    {
-        "series": 6,
-        "start_index": 37099,
-        "duration": 477,
-        "type": "spike",
-        "strength": 3.5
-    },
-    {
-        "series": 13,
-        "start_index": 38226,
-        "duration": 130,
-        "type": "seasonal_break",
-        "strength": 3.5
+        "strength": 6.5
     },
     {
         "series": 1,
-        "start_index": 37555,
-        "duration": 439,
+        "start_index": 814820,
+        "duration": 393,
+        "type": "seasonal_break",
+        "strength": 6.5
+    },
+    {
+        "series": 31,
+        "start_index": 949041,
+        "duration": 493,
+        "type": "spike",
+        "strength": 6.5
+    },
+    {
+        "series": 25,
+        "start_index": 934779,
+        "duration": 71,
+        "type": "spike",
+        "strength": 6.5
+    },
+    {
+        "series": 16,
+        "start_index": 974088,
+        "duration": 108,
+        "type": "level_shift",
+        "strength": 6.5
+    },
+    {
+        "series": 27,
+        "start_index": 899503,
+        "duration": 237,
+        "type": "seasonal_break",
+        "strength": 6.5
+    },
+    {
+        "series": 14,
+        "start_index": 879981,
+        "duration": 495,
+        "type": "level_shift",
+        "strength": 6.5
+    },
+    {
+        "series": 19,
+        "start_index": 806886,
+        "duration": 369,
+        "type": "spike",
+        "strength": 6.5
+    },
+    {
+        "series": 18,
+        "start_index": 819092,
+        "duration": 184,
+        "type": "spike",
+        "strength": 6.5
+    },
+    {
+        "series": 17,
+        "start_index": 961110,
+        "duration": 437,
+        "type": "spike",
+        "strength": 6.5
+    },
+    {
+        "series": 17,
+        "start_index": 989629,
+        "duration": 314,
         "type": "drift",
-        "strength": 3.5
+        "strength": 6.5
+    },
+    {
+        "series": 27,
+        "start_index": 874243,
+        "duration": 416,
+        "type": "seasonal_break",
+        "strength": 6.5
+    },
+    {
+        "series": 14,
+        "start_index": 767159,
+        "duration": 84,
+        "type": "drift",
+        "strength": 6.5
+    },
+    {
+        "series": 17,
+        "start_index": 973139,
+        "duration": 409,
+        "type": "seasonal_break",
+        "strength": 6.5
     },
     {
         "series": 21,
-        "start_index": 33843,
-        "duration": 240,
-        "type": "drift",
-        "strength": 3.5
+        "start_index": 958261,
+        "duration": 155,
+        "type": "seasonal_break",
+        "strength": 6.5
     },
     {
-        "series": 1,
-        "start_index": 35675,
-        "duration": 251,
-        "type": "drift",
-        "strength": 3.5
+        "series": 17,
+        "start_index": 926830,
+        "duration": 267,
+        "type": "seasonal_break",
+        "strength": 6.5
     },
     {
-        "series": 22,
-        "start_index": 37629,
-        "duration": 301,
-        "type": "spike",
-        "strength": 3.5
-    },
-    {
-        "series": 20,
-        "start_index": 36439,
-        "duration": 257,
-        "type": "spike",
-        "strength": 3.5
-    },
-    {
-        "series": 20,
-        "start_index": 30878,
-        "duration": 329,
-        "type": "drift",
-        "strength": 3.5
+        "series": 3,
+        "start_index": 973165,
+        "duration": 319,
+        "type": "level_shift",
+        "strength": 6.5
     }
 ]
