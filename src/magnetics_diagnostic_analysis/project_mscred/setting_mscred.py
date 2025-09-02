@@ -30,18 +30,18 @@ class Config:
     DATA_NUMBER = 1000000
     SET_SEPARATIONS = [int(DATA_NUMBER * (1-valid_test_rates[1]) * (1-valid_test_rates[0])), int(DATA_NUMBER * (1-valid_test_rates[1]))]  # Train & Valid and Valid & Test split indices
 
-    DEEP_CHANNEL_SIZES = [20, 40, 80]
+    DEEP_CHANNEL_SIZES = [32, 64, 128]
     LSTM_NUM_LAYERS = 1
     LSTM_TIMESTEPS = 15
     LSTM_EFFECTIVE_TIMESTEPS = [1, 2, 3, 6, 7, 8, 11, 12, 13, 14]
 
     ### Hyperparameters
-    BATCH_SIZE = 10
+    BATCH_SIZE = 5
     FIRST_LEARNING_RATE = 0.005
     WEIGHT_DECAY = 1e-5     # if needed
 
     ### Train parameters
-    N_EPOCHS = 100
+    N_EPOCHS = 150
 
     ### Data scrapping from MAST API
     RANDOM_SEED = 42
@@ -50,7 +50,7 @@ class Config:
     RAW_DATA_FILE_NAME = f"data_{'_'.join(GROUPS)}_{SUFFIX}.nc"
 
     ### Others
-    BEST_MODEL_NAME = "model1"
+    BEST_MODEL_NAME = "model2"
 
     # Method to update parameters
     @classmethod
