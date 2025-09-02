@@ -42,6 +42,7 @@ dependencies = [
     "torch>=2.2.0,<2.5.0",
     "ipykernel>=6.29.0",
     "psutil>=5.9.0",
+    "umap-learn>=0.5.9.post2",
 ]
 
 [project.optional-dependencies]
