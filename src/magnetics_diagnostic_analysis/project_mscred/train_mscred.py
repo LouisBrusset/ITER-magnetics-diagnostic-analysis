@@ -18,8 +18,8 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
     model = model.to(device)
     print("------training on {}-------".format(device))
 
-    early_stopping = EarlyStopping(min_delta=0.01, patience=6)
-    lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.2, patience=3, min_lr=1e-6, min_delta=0.001)
+    early_stopping = EarlyStopping(min_delta=0.01, patience=10)
+    lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.66, patience=3, min_lr=1e-6, min_delta=0.001)
 
     history = {'train_loss': [], 'valid_loss': []}
 

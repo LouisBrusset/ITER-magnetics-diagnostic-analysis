@@ -27,7 +27,7 @@ class Config:
     WINDOW_SIZES = [10, 30, 60]
     GAP_TIME = 10  # Step to calculate the next window
 
-    DATA_NUMBER = 1000000
+    DATA_NUMBER = 200000
     SET_SEPARATIONS = [int(DATA_NUMBER * (1-valid_test_rates[1]) * (1-valid_test_rates[0])), int(DATA_NUMBER * (1-valid_test_rates[1]))]  # Train & Valid and Valid & Test split indices
 
     DEEP_CHANNEL_SIZES = [32, 64, 128]
@@ -36,7 +36,7 @@ class Config:
     LSTM_EFFECTIVE_TIMESTEPS = [1, 2, 3, 6, 7, 8, 11, 12, 13, 14]
 
     ### Hyperparameters
-    BATCH_SIZE = 5
+    BATCH_SIZE = 30
     FIRST_LEARNING_RATE = 0.005
     WEIGHT_DECAY = 1e-5     # if needed
 
