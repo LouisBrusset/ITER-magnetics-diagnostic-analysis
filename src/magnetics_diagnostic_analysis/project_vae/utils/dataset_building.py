@@ -55,7 +55,7 @@ class MultivariateTimeSerieDataset(Dataset):
     
 
 class OneVariableTimeSerieDataset(Dataset):
-    def __init__(self, data: xr.Dataset, var_name: str = "ip", chan_to_keep: None | int = 1, n_subsample: int = 12, max_length: int = 3000):
+    def __init__(self, data: xr.Dataset, var_name: str = "ip", chan_to_keep: None | int = 1, n_subsample: int = 12, max_length: int = 3000, normalize: bool = True):
         # Group data by shot_index
         self.shot_indices = data['shot_index'].values
         self.unique_shots = np.unique(self.shot_indices)

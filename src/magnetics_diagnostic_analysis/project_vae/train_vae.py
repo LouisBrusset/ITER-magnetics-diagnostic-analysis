@@ -13,6 +13,7 @@ from magnetics_diagnostic_analysis.project_vae.setting_vae import config
 from magnetics_diagnostic_analysis.project_vae.model.vae import LSTMBetaVAE
 from magnetics_diagnostic_analysis.ml_tools.metrics import vae_loss_function, vae_reconstruction_error
 from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling, GradientClipping, DropOutScheduling
+from magnetics_diagnostic_analysis.ml_tools.preprocessing import normalize_batch, denormalize_batch
 
 
 def pad_sequences_smartly(batch):
@@ -50,10 +51,11 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
         for batch_data, batch_lengths in tqdm(loader, desc=f"Training intermediate VAE", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
+            normalized_batch, _, _ = normalize_batch(batch_data)
 
             optimizer.zero_grad()
-            recon_batch, z_mean, z_logvar = model(batch_data, batch_lengths)
-            loss, mse, kld = vae_loss_function(recon_batch, batch_data, z_mean, z_logvar, batch_lengths, beta=1.1)
+            recon_batch, z_mean, z_logvar = model(normalized_batch, batch_lengths)
+            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=1.1)
             loss.backward()
             gradient_clipper.on_backward_end(model)
             optimizer.step()
@@ -79,9 +81,10 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
         for batch_data, batch_lengths in tqdm(full_loader, desc=f"Evaluating intermediate VAE", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
-            
-            recon_batch, _, _ = model(batch_data, batch_lengths)
-            mse = vae_reconstruction_error(recon_batch, batch_data, batch_lengths)
+            normalized_batch, _, _ = normalize_batch(batch_data)
+
+            recon_batch, _, _ = model(normalized_batch, batch_lengths)
+            mse = vae_reconstruction_error(recon_batch, normalized_batch, batch_lengths)
             reconstruction_errors.append(mse.cpu())
 
     reconstruction_errors = torch.cat(reconstruction_errors).numpy()
@@ -129,10 +132,11 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
         for batch_data, batch_lengths in tqdm(loader, desc="Training final VAE", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
+            normalized_batch, _, _ = normalize_batch(batch_data)
 
             optimizer.zero_grad()
-            recon_batch, z_mean, z_logvar = model(batch_data, batch_lengths)
-            loss, mse, kld = vae_loss_function(recon_batch, batch_data, z_mean, z_logvar, batch_lengths, beta=1.1)
+            recon_batch, z_mean, z_logvar = model(normalized_batch, batch_lengths)
+            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=1.1)
             loss.backward()
             gradient_clipper.on_backward_end(model)
             optimizer.step()
@@ -158,8 +162,9 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
         for batch_data, batch_lengths in tqdm(full_loader, desc="Extracting latent features", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
+            normalized_batch, _, _ = normalize_batch(batch_data)
 
-            z_mean, _ = model.encoder(batch_data, batch_lengths)
+            z_mean, _ = model.encoder(normalized_batch, batch_lengths)
             z_mean_all.append(z_mean.cpu().numpy())
         
         latent_features = np.concatenate(z_mean_all, axis=0)
@@ -252,8 +257,6 @@ def train_iterative_vae_pipeline(
         del vae, optimizer, reconstruction_errors, current_subset, train_loader
         torch.cuda.empty_cache()
         gc.collect()
-
-
 
     # Last training phase
     print("Training final model...")
