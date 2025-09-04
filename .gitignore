@@ -26,6 +26,11 @@ env/
 # User generated files
 #
 
+# Test generated directories
+htmlcov/
+.coverage
+
+
 # Large datasets
 ## NetCDF files (all .nc files)
 #data/raw/mscred/*.nc

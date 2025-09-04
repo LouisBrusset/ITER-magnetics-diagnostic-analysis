@@ -29,3 +29,50 @@ def mscred_anomaly_score(reconstructed_valid: torch.Tensor, original: torch.Tens
     residuals = (reconstructed_valid - original) ** 2
     anomaly_score = np.sum(residuals.cpu().numpy(), axis=(1, 2, 3))
     return anomaly_score
+
+
+
+def vae_loss_function(
+    x_recon: torch.Tensor, 
+    x: torch.Tensor, 
+    z_mean: torch.Tensor, 
+    z_logvar: torch.Tensor, 
+    lengths: torch.Tensor, 
+    beta: float = 1.0
+    ) -> tuple[torch.Tensor]:
+
+    _, seq_length, _ = x.shape
+
+    mask = torch.arange(seq_length, device=x_recon.device)[None, :] < lengths[:, None]      # shape [batch_size, max_length]
+    mask = mask.unsqueeze(-1).float()                                                       # shape [batch_size, max_length, 1]
+
+    MSE = torch.nn.functional.mse_loss(x_recon, x, reduction='none')
+    MSE = (MSE * mask).sum(dim=(1,2))        # Mask application
+    num_valid_steps = mask.sum(dim=(1,2))    # Normalizing factor
+    MSE = torch.where(num_valid_steps > 0, MSE / num_valid_steps, torch.zeros_like(MSE))
+    KLD = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp(), dim=1)
+
+    MSE = torch.mean(MSE)
+    KLD = torch.mean(KLD)
+    TOTAL = MSE + beta * KLD
+
+    return TOTAL, MSE, KLD
+
+
+def vae_reconstruction_error(
+    x_recon: torch.Tensor, 
+    x: torch.Tensor, 
+    lengths: torch.Tensor, 
+    ) -> tuple[torch.Tensor]:
+
+    _, seq_length, _ = x.shape
+
+    mask = torch.arange(seq_length, device=x_recon.device)[None, :] < lengths[:, None]      # shape [batch_size, max_length]
+    mask = mask.unsqueeze(-1).float()                                                       # shape [batch_size, max_length, 1]
+
+    mse = torch.nn.functional.mse_loss(x_recon, x, reduction='none')
+    mse = (mse * mask).sum(dim=(1,2))        # Mask application
+    num_valid_steps = mask.sum(dim=(1,2))    # Normalizing factor
+    mse = torch.where(num_valid_steps > 0, mse / num_valid_steps, torch.zeros_like(mse))
+
+    return mse

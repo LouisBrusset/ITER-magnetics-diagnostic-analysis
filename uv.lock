@@ -1613,6 +1613,8 @@ dependencies = [
     { name = "pandas" },
     { name = "psutil" },
     { name = "pyarrow" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "s3fs" },
@@ -1624,6 +1626,7 @@ dependencies = [
     { name = "seaborn" },
     { name = "torch" },
     { name = "tqdm" },
+    { name = "umap" },
     { name = "umap-learn" },
     { name = "xarray", version = "2024.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -1656,7 +1659,9 @@ requires-dist = [
     { name = "pandas", specifier = "==2.2.2" },
     { name = "psutil", specifier = ">=5.9.0" },
     { name = "pyarrow", specifier = "==15.0.0" },
+    { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "requests", specifier = ">=2.32.0" },
@@ -1666,6 +1671,7 @@ requires-dist = [
     { name = "seaborn", specifier = ">=0.13.0" },
     { name = "torch", specifier = ">=2.2.0,<2.5.0" },
     { name = "tqdm", specifier = ">=4.67.0" },
+    { name = "umap", specifier = ">=0.1.1" },
     { name = "umap-learn", specifier = ">=0.5.9.post2" },
     { name = "xarray", specifier = ">=2024.6.0" },
     { name = "zarr", specifier = ">=2.16.0" },
@@ -3501,6 +3507,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/95/32/1a225d6164441be76
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/23/c7abc0ca0a1526a0774eca151daeb8de62ec457e77262b66b359c3c7679e/tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8", size = 347839, upload-time = "2025-03-23T13:54:41.845Z" },
 ]
+
+[[package]]
+name = "umap"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/46/08ab68936625400fe690684428d4db4764f49b406782cc133df1d0299d06/umap-0.1.1.tar.gz", hash = "sha256:5d08c1a335cc7ee175811a99dc9356d3d4b8567ad082e2b1b205198cf27c4256", size = 3191, upload-time = "2016-01-20T16:33:11.724Z" }
 
 [[package]]
 name = "umap-learn"

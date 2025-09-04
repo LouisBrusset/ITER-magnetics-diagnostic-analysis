@@ -7,8 +7,6 @@ set -euo pipefail
 #SBATCH --partition=titan
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
-#SBATCH --mem=16G
-#SBATCH --time=1-12:00:00
 #SBATCH --output=/home/ITER/brussel/Documents/ITER-magnetics-diagnostic-analysis/scripts/files/result_%j.out
 #SBATCH --error=/home/ITER/brussel/Documents/ITER-magnetics-diagnostic-analysis/scripts/files/error_%j.err
 

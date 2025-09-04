@@ -1,0 +1,17 @@
+Beginning execution at: Thu Sep  4 14:19:32 CEST 2025
+-------------------------------
+Hostname: 98dci4-clu-3001.iter.org
+Job ID: 606477
+Current directory: /home/ITER/brussel/Documents/ITER-magnetics-diagnostic-analysis/src/magnetics_diagnostic_analysis/project_mscred
+Python version: Python 3.11.5
+UV version: uv 0.7.8
+Checking GPU availability:
+PyTorch version: 2.4.1+cu121
+CUDA available: False
+GPU count: 0
+
+
+Choosen device = cpu
+Warning: Batch size 30 does not divide test dataset size 85000
+------training on cpu-------
+  0%|          | 0/400 [00:00<?, ?it/s]  0%|          | 1/400 [00:19<2:12:56, 19.99s/it]slurmstepd: error: *** JOB 606477 ON 98dci4-clu-3001 CANCELLED AT 2025-09-04T14:20:08 ***

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 from magnetics_diagnostic_analysis.ml_tools.metrics import mscred_loss_function
-from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling
+from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling, GradientClipping
 from magnetics_diagnostic_analysis.project_mscred.utils.dataloader_building import create_data_loaders
 from magnetics_diagnostic_analysis.project_mscred.model.mscred import MSCRED
 
@@ -18,9 +18,9 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
     model = model.to(device)
     print("------training on {}-------".format(device))
 
-    early_stopping = EarlyStopping(min_delta=0.01, patience=10)
+    early_stopper = EarlyStopping(min_delta=0.01, patience=10)
     lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.66, patience=3, min_lr=1e-6, min_delta=0.001)
-
+    gradient_clipper = GradientClipping(max_norm=2.0)
     history = {'train_loss': [], 'valid_loss': []}
 
     for epoch in range(epochs):
@@ -36,7 +36,7 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
             x_recon = model(x)
             loss = mscred_loss_function(x_recon, x)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            gradient_clipper.on_backward_end(model)
             optimizer.step()
 
             train_loss_sum += loss.item()
@@ -68,10 +68,10 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
             f"[Val loss: {valid_loss:.4f}]" if valid_loss is not None else "No valid"
         ))
         
-        if early_stopping.check_stop(current_loss, model):
+        if early_stopper.check_stop(current_loss, model):
             print(f"Early stopping at epoch {epoch + 1} with loss {current_loss:.4f}")
             print(f"Restoring best weights for model.")
-            early_stopping.restore_best_weights(model)
+            early_stopper.restore_best_weights(model)
             break
 
         lr_scheduler.step(current_loss)
@@ -124,14 +124,30 @@ def main():
         mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name_to_continue}.pth"))
     
     # Train
-    history, trained_mscred = train(
-        mscred, 
-        train_loader, 
-        optimizer, 
-        epochs=config.N_EPOCHS, 
-        device=config.DEVICE, 
-        valid_loader=valid_loader
-    )
+    try:
+        history, trained_mscred = train(
+            mscred, 
+            train_loader, 
+            optimizer, 
+            epochs=config.N_EPOCHS, 
+            device=config.DEVICE, 
+            valid_loader=valid_loader
+        )
+        torch.save(trained_mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}.pth")
+        #config.update({"BEST_MODEL_NAME": model_name_register})
+
+        plot_history(history['train_loss'], history['valid_loss'])
+
+
+    except KeyboardInterrupt:
+        print("\nTraining interrupted. Saving current model state...")
+        if 'trained_mscred' in locals():
+            torch.save(trained_mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}_interrupted.pth")
+        else:
+            torch.save(mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}_interrupted.pth")
+        print(f"Model saved to: {config.DIR_MODEL_PARAMS / f'{model_name_register}_interrupted.pth'}")
+        return
+
     torch.save(trained_mscred.state_dict(), config.DIR_MODEL_PARAMS / f"{model_name_register}.pth")
     #config.update({"BEST_MODEL_NAME": model_name_register})
 

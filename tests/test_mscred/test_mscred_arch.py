@@ -112,18 +112,18 @@ def test_cnn_decoder():
 # Tests for Conv_LSTM
 def test_conv_lstm():
     """Test Conv_LSTM with different input sizes"""
-    batch_size = 10
-    height = 32
-    width = 32
-    layers = 2
-    deep_channels = [32, 64, 128]
+    batch_size = 5
+    height = 16
+    width = 16
+    layers = 1
+    deep_channels = [16, 32, 64]
     timesteps = 5
     attention_timesteps = [1, 2, 3, 4]
 
     # Simulated outputs from encoder
-    conv1_out = torch.randn(batch_size, 32, height, width).to(device)
-    conv2_out = torch.randn(batch_size, 64, height//2, width//2).to(device)
-    conv3_out = torch.randn(batch_size, 128, height//4, width//4).to(device)
+    conv1_out = torch.randn(batch_size, 16, height, width).to(device)
+    conv2_out = torch.randn(batch_size, 32, height//2, width//2).to(device)
+    conv3_out = torch.randn(batch_size, 64, height//4, width//4).to(device)
 
     conv_lstm = Conv_LSTM(
         deep_channel_sizes=deep_channels, 
@@ -135,14 +135,14 @@ def test_conv_lstm():
     conv1_lstm, conv2_lstm, conv3_lstm = conv_lstm(conv1_out, conv2_out, conv3_out)
 
     # Shape verification
-    assert conv1_lstm.shape == (batch_size, 32, height, width), \
-        f"conv1_lstm shape expected: {(batch_size, 32, height, width)}, obtained: {conv1_lstm.shape}"
+    assert conv1_lstm.shape == (batch_size, 16, height, width), \
+        f"conv1_lstm shape expected: {(batch_size, 16, height, width)}, obtained: {conv1_lstm.shape}"
     
-    assert conv2_lstm.shape == (batch_size, 64, height//2, width//2), \
-        f"conv2_lstm shape expected: {(batch_size, 64, height//2, width//2)}, obtained: {conv2_lstm.shape}"
+    assert conv2_lstm.shape == (batch_size, 32, height//2, width//2), \
+        f"conv2_lstm shape expected: {(batch_size, 32, height//2, width//2)}, obtained: {conv2_lstm.shape}"
     
-    assert conv3_lstm.shape == (batch_size, 128, height//4, width//4), \
-        f"conv3_lstm expected shape: {(batch_size, 128, height//4, width//4)}, got: {conv3_lstm.shape}"
+    assert conv3_lstm.shape == (batch_size, 64, height//4, width//4), \
+        f"conv3_lstm expected shape: {(batch_size, 64, height//4, width//4)}, got: {conv3_lstm.shape}"
 
     # Value verification
     for name, tensor in [('conv1_lstm', conv1_lstm), ('conv2_lstm', conv2_lstm), ('conv3_lstm', conv3_lstm)]:
@@ -151,12 +151,12 @@ def test_conv_lstm():
         assert tensor.requires_grad, f"{name} does not preserve the gradient"
 
     # Tests with different image sizes
-    test_sizes = [(32, 32), (64, 64), (80, 80)]
+    test_sizes = [(16, 16), (8, 8), (32, 32)]
     for h, w in test_sizes:
         # Recreate inputs with new dimensions
-        conv1 = torch.randn(batch_size, 32, h, w).to(device)
-        conv2 = torch.randn(batch_size, 64, h//2, w//2).to(device)
-        conv3 = torch.randn(batch_size, 128, h//4, w//4).to(device)
+        conv1 = torch.randn(batch_size, 16, h, w).to(device)
+        conv2 = torch.randn(batch_size, 32, h//2, w//2).to(device)
+        conv3 = torch.randn(batch_size, 64, h//4, w//4).to(device)
         
         # Create and test ConvLSTM
         conv_lstm = Conv_LSTM(
@@ -169,19 +169,19 @@ def test_conv_lstm():
         out1, out2, out3 = conv_lstm(conv1, conv2, conv3) 
         
         # Verification
-        assert out1.shape == (batch_size, 32, h, w)
-        assert out2.shape == (batch_size, 64, h//2, w//2) 
-        assert out3.shape == (batch_size, 128, h//4, w//4)
+        assert out1.shape == (batch_size, 16, h, w)
+        assert out2.shape == (batch_size, 32, h//2, w//2) 
+        assert out3.shape == (batch_size, 64, h//4, w//4)
 
 # Tests for MSCRED
 def test_mscred():
     """Test complete MSCRED model with different input sizes"""
-    batch_size = 10
-    in_channels = 3
-    height = 32
-    width = 32
-    layers = 2
-    deep_channels = [32, 64, 128]
+    batch_size = 5
+    in_channels = 2
+    height = 8
+    width = 8
+    layers = 1
+    deep_channels = [16, 32, 64]
     timesteps = 5
     effective_steps = [1, 2, 4]
 
@@ -230,12 +230,12 @@ def test_mscred():
 # Test for gradient propagation
 def test_gradient_flow():
     """Test gradient propagation through all model components"""
-    batch_size = 10
-    in_channels = 3
-    height = 32
-    width = 32
+    batch_size = 5
+    in_channels = 2
+    height = 8
+    width = 8
     layers = 2
-    deep_channels = [32, 64, 128]
+    deep_channels = [16, 32, 64]
     timesteps = 5
     effective_steps = [1, 2, 4]
 

@@ -27,7 +27,7 @@ class Config:
     WINDOW_SIZES = [10, 30, 60]
     GAP_TIME = 10  # Step to calculate the next window
 
-    DATA_NUMBER = 200000
+    DATA_NUMBER = 500000
     SET_SEPARATIONS = [int(DATA_NUMBER * (1-valid_test_rates[1]) * (1-valid_test_rates[0])), int(DATA_NUMBER * (1-valid_test_rates[1]))]  # Train & Valid and Valid & Test split indices
 
     DEEP_CHANNEL_SIZES = [32, 64, 128]
