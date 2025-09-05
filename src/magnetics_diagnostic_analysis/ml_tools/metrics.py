@@ -49,7 +49,7 @@ def vae_loss_function(
     MSE = torch.nn.functional.mse_loss(x_recon, x, reduction='none')
     MSE = (MSE * mask).sum(dim=(1,2))        # Mask application
     num_valid_steps = mask.sum(dim=(1,2))    # Normalizing factor
-    MSE = torch.where(num_valid_steps > 1.0e-7, MSE / num_valid_steps, torch.zeros_like(MSE))
+    MSE = torch.where(num_valid_steps > 0, MSE / num_valid_steps, torch.zeros_like(MSE))
     KLD = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp(), dim=1)
 
     MSE = torch.mean(MSE)

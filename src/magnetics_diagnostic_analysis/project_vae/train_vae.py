@@ -125,16 +125,13 @@ def detect_outliers_kde(scores, alpha=0.05):
 
 def pad_results(x_couples: list) -> list:
     """Pad results to the max length in the list"""
-    print(x_couples[0].shape)
     max_length = max([x.shape[2] for x in x_couples])
-    print("Max length:", max_length)
     padded_results = []
     for x in x_couples:
         pad_size = max_length - x.shape[2]
         if pad_size > 0:
             pad_tensor = np.zeros((x.shape[0], x.shape[1], pad_size, x.shape[3]))
             padded_x = np.concatenate([x, pad_tensor], axis=2)
-            print("Padded shape:", padded_x.shape)
         else:
             padded_x = x
         if padded_x.shape[2] != max_length:
@@ -188,11 +185,7 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
     with torch.no_grad():
         z_mean_all = []
         x_couple_all = []
-        i=0
         for batch_data, batch_lengths in tqdm(full_loader, desc="Extracting latent features", leave=False):
-            i+=1
-            print(i)
-            print(batch_data.shape)
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
             normalized_batch, min_batch, max_batch = normalize_batch(batch_data)
@@ -230,6 +223,7 @@ def train_iterative_vae_pipeline(
     n_iterations: int = 5,
     n_epochs_per_iter: int = 50,
     batch_size: int = 32,
+    lstm_bptt_steps: int = None,
     kde_percentile_rate: float = 0.05,
     dbscan_eps: float = 0.5,
     dbscan_min_samples: int = 5,
@@ -276,7 +270,7 @@ def train_iterative_vae_pipeline(
         # VAE Training
         gc.collect()
         torch.cuda.empty_cache()
-        vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers).to(device)
+        vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers, lstm_bptt_steps).to(device)
         optimizer = torch.optim.Adam(vae.parameters(), lr=config.FIRST_LEARNING_RATE)
 
         history, reconstruction_errors = train_one_vae(vae, optimizer, train_loader, full_loader, n_epochs_per_iter, device, verbose=True)
@@ -309,7 +303,7 @@ def train_iterative_vae_pipeline(
                               pin_memory=False, 
                               num_workers=0)
 
-    final_vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers).to(device)
+    final_vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers, lstm_bptt_steps).to(device)
     optimizer = torch.optim.Adam(final_vae.parameters(), lr=config.FIRST_LEARNING_RATE)
 
     history, reconstruction_couples, latent_features = train_final_vae(final_vae, optimizer, final_loader, full_loader, n_epochs_per_iter, device, verbose=True)
@@ -342,6 +336,7 @@ def main():
     n_iterations = config.N_ITERATIONS
     n_epochs_per_iter = config.N_EPOCHS
     batch_size = config.BATCH_SIZE
+    lstm_bptt_steps = config.LSTM_BPTT_STEPS
     kde_percentile_rate = config.KDE_PERCENTILE_RATE
     dbscan_eps = config.DBSCAN_EPS
     dbscan_min_samples = config.DBSCAN_MIN_SAMPLES
@@ -358,6 +353,7 @@ def main():
         dbscan_eps=dbscan_eps,
         dbscan_min_samples=dbscan_min_samples,
         knn_n_neighbors=knn_n_neighbors,
+        lstm_bptt_steps=lstm_bptt_steps,
         device=device
     )
 

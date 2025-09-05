@@ -82,6 +82,7 @@ class LSTMBetaVAE(nn.Module):
         reconstructions = []
         all_z_means = []
         all_z_logvars = []
+        segment_weights = []
         
         # Initialization of hidden states for encoder and decoder
         h_enc, c_enc = None, None
@@ -92,6 +93,9 @@ class LSTMBetaVAE(nn.Module):
             end_idx = min(start_idx + self.bptt_steps, seq_len)
             segment_x = x[:, start_idx:end_idx, :]
             segment_lengths = (lengths - start_idx).clamp(min=0, max=self.bptt_steps)
+
+            weights = segment_lengths.float() / segment_lengths.max().clamp(min=1)
+            segment_weights.append(weights)
 
             # Create a mask for sequences that are still active in this segment
             active_indices = torch.where(segment_lengths > 0)[0]
@@ -169,10 +173,13 @@ class LSTMBetaVAE(nn.Module):
             all_z_means.append(full_z_mean)
             all_z_logvars.append(full_z_logvar)
 
-        z_means_all = torch.stack(all_z_means, dim=1)  # [batch, segments, latent_dim]
+        weights_tensor = torch.stack(segment_weights, dim=1)  # [batch, segments]
+        weights_tensor = weights_tensor.unsqueeze(-1)         # [batch, segments, 1]
+
+        z_means_all = torch.stack(all_z_means, dim=1)         # [batch, segments, latent_dim]
         z_logvars_all = torch.stack(all_z_logvars, dim=1)
-        z_mean = torch.mean(z_means_all, dim=1)
-        z_logvar = torch.mean(z_logvars_all, dim=1)
+        z_mean = torch.sum(z_means_all * weights_tensor, dim=1) / torch.sum(weights_tensor, dim=1)
+        z_logvar = torch.sum(z_logvars_all * weights_tensor, dim=1) / torch.sum(weights_tensor, dim=1)
         reconstruction = torch.cat(reconstructions, dim=1)
         
         return reconstruction, z_mean, z_logvar

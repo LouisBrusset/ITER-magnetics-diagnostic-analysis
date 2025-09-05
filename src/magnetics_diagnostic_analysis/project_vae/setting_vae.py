@@ -34,9 +34,10 @@ class Config:
     SET_SEPARATION =  int(DATA_NUMBER * (1-train_test_rates))  # Train & Test split indice
 
     ### VAE architecture
-    LATENT_DIM = 16
+    LATENT_DIM = 50
     LSTM_HIDDEN_DIM = 128
     LSTM_NUM_LAYERS = 2
+    LSTM_BPTT_STEPS = None
     BETA = 2.0
 
     ### Hyperparameters
