@@ -54,7 +54,8 @@ def plot_projection(projection: np.ndarray,
                     filename: str = "tsne_plot.png",
                     figsize: tuple = (12, 8),
                     alpha: float = 0.7,
-                    legend: bool = True) -> None:
+                    legend: bool = True,
+                    verbose: bool = False) -> None:
     """
     Create and save a t-SNE or UMAP projection plot.
 
@@ -68,7 +69,7 @@ def plot_projection(projection: np.ndarray,
         legend: (bool) Show legend if labels are provided
     """
     if projection.shape[1] not in [2, 3]:
-        raise ValueError("La projection doit avoir 2 ou 3 dimensions")
+        raise ValueError("Projection dim must be 2 or 3.")
     
     plt.figure(figsize=figsize)
     if projection.shape[1] == 2:    # plot 2D
@@ -78,14 +79,14 @@ def plot_projection(projection: np.ndarray,
             for i, label in enumerate(unique_labels):
                 mask = labels == label
                 plt.scatter(projection[mask, 0], projection[mask, 1],
-                           c=[colors[i]], label=str(label), alpha=alpha, s=20)
+                            c=[colors[i]], label=str(label), alpha=alpha, s=20)
             if legend:
                 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         else:
             plt.scatter(projection[:, 0], projection[:, 1], 
                        alpha=alpha, s=20, c='blue')
-        plt.xlabel('projection dimension 1')
-        plt.ylabel('projection dimension 2')
+        plt.xlabel('projection dim 1')
+        plt.ylabel('projection dim 2')
 
     else:   # plot 3D
         ax = plt.axes(projection='3d')
@@ -101,17 +102,17 @@ def plot_projection(projection: np.ndarray,
         else:
             ax.scatter3D(projection[:, 0], projection[:, 1], projection[:, 2],
                         alpha=alpha, s=20, c='blue')
-        ax.set_xlabel('projection dimension 1')
-        ax.set_ylabel('projection dimension 2')
-        ax.set_zlabel('projection dimension 3')
+        ax.set_xlabel('projection dim 1')
+        ax.set_ylabel('projection dim 2')
+        ax.set_zlabel('projection dim 3')
 
     plt.title(title)
     plt.tight_layout()
     
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    
-    print(f"Plot enregistré sous : {filename}")
+    if verbose:
+        print(f"Plot enregistré sous : {filename}")
 
 
 

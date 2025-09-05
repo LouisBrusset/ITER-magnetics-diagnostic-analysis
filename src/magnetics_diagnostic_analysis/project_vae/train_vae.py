@@ -14,6 +14,8 @@ from magnetics_diagnostic_analysis.project_vae.model.vae import LSTMBetaVAE
 from magnetics_diagnostic_analysis.ml_tools.metrics import vae_loss_function, vae_reconstruction_error
 from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling, GradientClipping, DropOutScheduling
 from magnetics_diagnostic_analysis.ml_tools.preprocessing import normalize_batch, denormalize_batch
+from magnetics_diagnostic_analysis.project_vae.utils.dataset_building import MultivariateTimeSerieDataset, OneVariableTimeSerieDataset
+from magnetics_diagnostic_analysis.project_vae.utils.plot_training import plot_history, plot_density_and_threshold, plot_projected_latent_space, plot_random_reconstructions
 
 
 def pad_sequences_smartly(batch):
@@ -43,9 +45,10 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
     gradient_clipper = GradientClipping(max_norm=2.0)
 
     # Training loop
+    history = []
     model.train()
     if verbose:
-        print(f"{'Epoch':<40} {'Loss':<20} {'mse':<20} {'kld':<20}")
+        print(f"{'Epoch':<30} {'Loss':<25} {'mse':<25} {'kld':<25}")
     for epoch in range(n_epochs_per_iter):
         total_loss = 0
         for batch_data, batch_lengths in tqdm(loader, desc=f"Training intermediate VAE", leave=False):
@@ -55,16 +58,17 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
 
             optimizer.zero_grad()
             recon_batch, z_mean, z_logvar = model(normalized_batch, batch_lengths)
-            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=1.1)
+            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=config.BETA)
             loss.backward()
             gradient_clipper.on_backward_end(model)
             optimizer.step()
             total_loss += loss.item()
             total_mse, total_kld = mse.item(), kld.item()
+            history.append(loss.item())
 
         epo, total_loss, total_mse, total_kld = f"Iteration {epoch + 1}/{n_epochs_per_iter}", total_loss/len(loader), total_mse/len(loader), total_kld/len(loader)
         if verbose:
-            print(f"{epo:<40} {total_loss:<20} {total_mse:<20} {total_kld:<20}")
+            print(f"{epo:<30} {total_loss:<25} {total_mse:<25} {total_kld:<25}")
         if early_stopper.check_stop(total_loss, model):
             print(f"Early stopping at epoch {epoch + 1} with loss {total_loss:.4f}")
             print(f"Restoring best weights for model.")
@@ -88,7 +92,9 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
             reconstruction_errors.append(mse.cpu())
 
     reconstruction_errors = torch.cat(reconstruction_errors).numpy()
-    return reconstruction_errors
+
+
+    return history, reconstruction_errors
 
 
 def find_threshold_kde(scores, alpha=0.05):
@@ -107,14 +113,32 @@ def find_threshold_kde(scores, alpha=0.05):
 
     threshold = np.percentile(scores[density_values <= threshold_density], (1-alpha)*100)
     del kde
-    return threshold
+    return threshold, density_values
 
 def detect_outliers_kde(scores, alpha=0.05):
-    threshold = find_threshold_kde(scores, alpha)
+    threshold, density_values = find_threshold_kde(scores, alpha)
     outlier_mask = scores > threshold
     outlier_indices = np.where(outlier_mask)[0]
     
-    return outlier_indices, threshold
+    return outlier_indices, threshold, density_values
+
+
+def pad_results(x_couples: list) -> list:
+    """Pad results to the max length in the list"""
+    print(x_couples[0].shape)
+    max_length = max([x.shape[2] for x in x_couples])
+    padded_results = []
+    for x in x_couples:
+        pad_size = max_length - x.shape[2]
+        if pad_size > 0:
+            pad_tensor = np.zeros((x.shape[0], x.shape[1], pad_size, x.shape[3]))
+            padded_x = np.concatenate([x, pad_tensor], axis=2)
+        else:
+            padded_x = x
+        if padded_x.shape[2] != max_length:
+            raise ValueError("Padding failed, shapes do not match")
+        padded_results.append(padded_x)
+    return padded_results
 
 
 def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, device, verbose):
@@ -124,9 +148,10 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
     gradient_clipper = GradientClipping(max_norm=2.0)
 
     # Training loop
+    history = []
     model.train()
     if verbose:
-        print(f"{'Epoch':<40} {'Loss':<20} {'mse':<20} {'kld':<20}")
+        print(f"{'Epoch':<30} {'Loss':<25} {'mse':<25} {'kld':<205}")
     for epoch in range(n_epochs_per_iter):
         total_loss = 0
         for batch_data, batch_lengths in tqdm(loader, desc="Training final VAE", leave=False):
@@ -136,16 +161,17 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
 
             optimizer.zero_grad()
             recon_batch, z_mean, z_logvar = model(normalized_batch, batch_lengths)
-            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=1.1)
+            loss, mse, kld = vae_loss_function(recon_batch, normalized_batch, z_mean, z_logvar, batch_lengths, beta=config.BETA)
             loss.backward()
             gradient_clipper.on_backward_end(model)
             optimizer.step()
             total_loss += loss.item()
             total_mse, total_kld = mse.item(), kld.item()
+            history.append(loss.item())
 
         epo, total_loss, total_mse, total_kld = f"Iteration {epoch + 1}/{n_epochs_per_iter}", total_loss/len(loader), total_mse/len(loader), total_kld/len(loader)
         if verbose:
-            print(f"{epo:<40} {total_loss:<20} {total_mse:<20} {total_kld:<20}")
+            print(f"{epo:<30} {total_loss:<25} {total_mse:<25} {total_kld:<25}")
         if early_stopper.check_stop(total_loss, model):
             print(f"Early stopping at epoch {epoch + 1} with loss {total_loss:.4f}")
             print(f"Restoring best weights for model.")
@@ -159,17 +185,34 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
     model.eval()
     with torch.no_grad():
         z_mean_all = []
+        x_couple_all = []
+        i=0
+        full_loader = DataLoader(dataset=full_loader.dataset,
+                                 batch_size=200,
+                                 shuffle=False,
+                                 collate_fn=full_loader.collate_fn,
+                                 drop_last=False,
+                                 pin_memory=full_loader.pin_memory)
         for batch_data, batch_lengths in tqdm(full_loader, desc="Extracting latent features", leave=False):
+            i+=1
+            print(i)
+            print(batch_data.shape)
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
-            normalized_batch, _, _ = normalize_batch(batch_data)
+            normalized_batch, min_batch, max_batch = normalize_batch(batch_data)
 
-            z_mean, _ = model.encoder(normalized_batch, batch_lengths)
+            x_recon, z_mean, _ = model(normalized_batch, batch_lengths)
             z_mean_all.append(z_mean.cpu().numpy())
-        
+
+            x_recon = denormalize_batch(x_recon, min_batch, max_batch)
+            x_couple = np.concatenate([batch_data.unsqueeze(0).cpu().numpy(), x_recon.unsqueeze(0).cpu().numpy()], axis=0)
+            x_couple_all.append(x_couple)
+
         latent_features = np.concatenate(z_mean_all, axis=0)
+        reconstruction_couples = np.concatenate(pad_results(x_couple_all), axis=1)
+
     print("Latent features extracted for final VAE")
-    return latent_features
+    return history, reconstruction_couples, latent_features
 
 def find_cluster_and_classify(latent_features, dbscan_eps, dbscan_min_samples, knn_n_neighbors):
     dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
@@ -203,9 +246,9 @@ def train_iterative_vae_pipeline(
     print("Sample data shape:", sample_data.shape)
     input_dim = sample_data.shape[-1]
     print("Input dim:", input_dim)
-    hidden_dim = 16
-    latent_dim = 8
-    lstm_layers = 1
+    hidden_dim = config.LSTM_HIDDEN_DIM
+    latent_dim = config.LATENT_DIM
+    lstm_layers = config.LSTM_NUM_LAYERS
 
     # Good and bad health indices initialization & model storage
     valid_indices = list(range(len(train_dataset)))
@@ -238,12 +281,13 @@ def train_iterative_vae_pipeline(
         gc.collect()
         torch.cuda.empty_cache()
         vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers).to(device)
-        optimizer = torch.optim.Adam(vae.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(vae.parameters(), lr=config.FIRST_LEARNING_RATE)
 
-        reconstruction_errors = train_one_vae(vae, optimizer, train_loader, full_loader, n_epochs_per_iter, device, verbose=True)
-
+        history, reconstruction_errors = train_one_vae(vae, optimizer, train_loader, full_loader, n_epochs_per_iter, device, verbose=True)
+        plot_history(history, save_path= config.DIR_FIGURES / f"train_histories/vae_training_iteration_{iteration + 1}.png")
         # Outlier detection with KDE
-        outlier_indices, threshold = detect_outliers_kde(reconstruction_errors, alpha=kde_percentile_rate)
+        outlier_indices, threshold, density_values = detect_outliers_kde(reconstruction_errors, alpha=kde_percentile_rate)
+        plot_density_and_threshold(density_values, threshold, save_path= config.DIR_FIGURES / f"train_densities/kde_threshold_iteration_{iteration + 1}.png")
 
         # Update anomaly indices
         all_anomaly_indices = np.unique(np.concatenate([all_anomaly_indices, outlier_indices]))
@@ -270,12 +314,15 @@ def train_iterative_vae_pipeline(
                               num_workers=0)
 
     final_vae = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, lstm_layers).to(device)
-    optimizer = torch.optim.Adam(final_vae.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(final_vae.parameters(), lr=config.FIRST_LEARNING_RATE)
 
-    latent_features = train_final_vae(final_vae, optimizer, final_loader, full_loader, n_epochs_per_iter, device, verbose=True)
+    history, reconstruction_couples, latent_features = train_final_vae(final_vae, optimizer, final_loader, full_loader, n_epochs_per_iter, device, verbose=True)
+    plot_history(history, save_path= config.DIR_FIGURES / f"final_vae/vae_training_final.png")
+    plot_random_reconstructions(reconstruction_couples, n_samples=5, save_path= config.DIR_FIGURES / f"final_vae/random_reconstructions_final.png")
 
     # Final clustering on latent space on all train_dataset, with DBScan coupled with KNN
     knn, clusters, outlier_mask = find_cluster_and_classify(latent_features, dbscan_eps, dbscan_min_samples, knn_n_neighbors)
+    plot_projected_latent_space(latent_features, clusters, outlier_mask, save_path= config.DIR_FIGURES / f"final_vae/latent_space_final.png")
 
     del final_loader, final_subset, full_loader
     gc.collect()
@@ -289,24 +336,20 @@ def train_iterative_vae_pipeline(
         'outlier_mask': outlier_mask
     }
 
-
-
-
-
-if __name__ == "__main__":
+def main():
     path_train = config.DIR_PREPROCESSED_DATA / f"dataset_ip_vae_train.pt"
-    path_test = config.DIR_PREPROCESSED_DATA / f"dataset_ip_vae_test.pt"
+    #path_test = config.DIR_PREPROCESSED_DATA / f"dataset_ip_vae_test.pt"
     train_set = torch.load(path_train)
-    test_set = torch.load(path_test)
+    #test_set = torch.load(path_test)
 
 
-    n_iterations = 1
-    n_epochs_per_iter = 2
-    batch_size = 1
-    kde_percentile_rate = 0.05
-    dbscan_eps = 0.5
-    dbscan_min_samples = 5
-    knn_n_neighbors = 10
+    n_iterations = config.N_ITERATIONS
+    n_epochs_per_iter = config.N_EPOCHS
+    batch_size = config.BATCH_SIZE
+    kde_percentile_rate = config.KDE_PERCENTILE_RATE
+    dbscan_eps = config.DBSCAN_EPS
+    dbscan_min_samples = config.DBSCAN_MIN_SAMPLES
+    knn_n_neighbors = config.KNN_N_NEIGHBORS
     device = config.DEVICE
 
 
@@ -322,10 +365,15 @@ if __name__ == "__main__":
         device=device
     )
 
-    final_vae = results['final_vae']
-    vae_models = results['vae_models']
-    knn = results['knn']
-    anomaly_indices = results['anomaly_indices']
-    latent_features = results['latent_features']
-    clusters = results['clusters']
-    outlier_mask = results['outlier_mask']
+    # Saving result to a json file
+    save_path = config.DIR_PROCESSED_DATA / f"vae_iterative_results.pth"
+    torch.save(results, save_path)
+    print(f"Results saved to {save_path}")
+
+
+
+
+if __name__ == "__main__":
+    torch.backends.cudnn.enabled = False
+    main()
+

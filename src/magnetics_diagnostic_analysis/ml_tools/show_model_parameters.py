@@ -1,5 +1,6 @@
 import torch
 
+from magnetics_diagnostic_analysis.project_vae.setting_vae import config
 from magnetics_diagnostic_analysis.project_vae.model.vae import LSTMBetaVAE
 
 
@@ -66,11 +67,11 @@ def print_model_parameters(model, model_name="LSTMBetaVAE"):
 
 if __name__ == "__main__":
 
-    input_dim = 96
-    hidden_dim = 128
-    latent_dim = 24
-    num_layers = 2
-    beta = 1.0
+    input_dim = 1
+    hidden_dim = config.LSTM_HIDDEN_DIM
+    latent_dim = config.LATENT_DIM
+    num_layers = config.NUM_LAYERS
+    beta = config.BETA
 
     model = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, num_layers)
     

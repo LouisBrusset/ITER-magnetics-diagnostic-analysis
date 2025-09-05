@@ -142,11 +142,11 @@ def create_datasets(
 
     # Create datasets for each split
     if multivariate:
-        train_dataset = MultivariateTimeSerieDataset(data.isel(time=train_mask), n_chan_to_keep=4, n_subsample=12, max_length=3000)
-        test_dataset = MultivariateTimeSerieDataset(data.isel(time=test_mask), n_chan_to_keep=4, n_subsample=12, max_length=3000)
+        train_dataset = MultivariateTimeSerieDataset(data.isel(time=train_mask), n_chan_to_keep=config.N_CHAN_TO_KEEP, n_subsample=config.N_SUBSAMPLE, max_length=config.MAX_LENGTH)
+        test_dataset = MultivariateTimeSerieDataset(data.isel(time=test_mask), n_chan_to_keep=config.N_CHAN_TO_KEEP, n_subsample=config.N_SUBSAMPLE, max_length=config.MAX_LENGTH)
     else:
-        train_dataset = OneVariableTimeSerieDataset(data.isel(time=train_mask), var_name="ip", chan_to_keep=None, n_subsample=25, max_length=3000)
-        test_dataset = OneVariableTimeSerieDataset(data.isel(time=test_mask), var_name="ip", chan_to_keep=None, n_subsample=25, max_length=3000)
+        train_dataset = OneVariableTimeSerieDataset(data.isel(time=train_mask), var_name="ip", chan_to_keep=None, n_subsample=config.N_SUBSAMPLE, max_length=config.MAX_LENGTH)
+        test_dataset = OneVariableTimeSerieDataset(data.isel(time=test_mask), var_name="ip", chan_to_keep=None, n_subsample=config.N_SUBSAMPLE, max_length=config.MAX_LENGTH)
 
 
     if save:
@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
 
     print("\n--- Test dataset creation: ---")
-    train_set, test_set = create_datasets(data_all, set_separation=config.SET_SEPARATION, total_length=config.DATA_NUMBER, rd_seed=config.SEED, multivariate=False, save=True)
+    train_set, test_set = create_datasets(data_all, set_separation=config.SET_SEPARATION, total_length=config.DATA_NUMBER, rd_seed=config.SEED, multivariate=config.MULTIVARIATE, save=True)
     print("Training set size:", len(train_set))
     print("Testing set size:", len(test_set))
     print(train_set)
