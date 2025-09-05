@@ -26,7 +26,7 @@ class Config:
     ### Important parameters
     MULTIVARIATE = False    # Whether to use multivariate data or not
     MAX_LENGTH = 3000       # Max length of the sequences (in time steps)
-    N_SUBSAMPLE = 20        # Factor to subsample the data
+    N_SUBSAMPLE = 1         # Factor to subsample the data
     N_CHAN_TO_KEEP = None   # Number of channels to keep if multivariate
     VAR_NAME = "ip"         # Variable name to use if univariate
 
@@ -34,19 +34,19 @@ class Config:
     SET_SEPARATION =  int(DATA_NUMBER * (1-train_test_rates))  # Train & Test split indice
 
     ### VAE architecture
-    LATENT_DIM = 128
-    LSTM_HIDDEN_DIM = 256
+    LATENT_DIM = 16
+    LSTM_HIDDEN_DIM = 128
     LSTM_NUM_LAYERS = 2
     BETA = 2.0
 
     ### Hyperparameters
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 128
     FIRST_LEARNING_RATE = 0.001
     WEIGHT_DECAY = 1e-5     # if needed
 
     ### Train parameters
-    N_ITERATIONS = 2
-    N_EPOCHS = 5
+    N_ITERATIONS = 1
+    N_EPOCHS = 2
     KDE_PERCENTILE_RATE = 0.05
     DBSCAN_EPS = 0.0001
     DBSCAN_MIN_SAMPLES = 30

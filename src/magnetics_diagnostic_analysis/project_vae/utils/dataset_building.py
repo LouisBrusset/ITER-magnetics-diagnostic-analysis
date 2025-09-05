@@ -164,7 +164,7 @@ def create_datasets(
 
 
 if __name__ == "__main__":
-    path = Path().absolute().parent.parent / "data/preprocessed/mscred/data_magnetics_mscred_cleaned.nc"
+    path = Path(__file__).absolute().parent.parent.parent.parent.parent / "data/preprocessed/mscred/data_magnetics_mscred_cleaned.nc"
     data_all = xr.open_dataset(path)
 
 

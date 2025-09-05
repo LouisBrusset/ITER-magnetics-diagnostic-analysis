@@ -50,7 +50,7 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
     if verbose:
         print(f"{'Epoch':<30} {'Loss':<25} {'mse':<25} {'kld':<25}")
     for epoch in range(n_epochs_per_iter):
-        total_loss = 0
+        total_loss, total_mse, total_kld = 0, 0, 0
         for batch_data, batch_lengths in tqdm(loader, desc=f"Training intermediate VAE", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
@@ -63,7 +63,7 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
             gradient_clipper.on_backward_end(model)
             optimizer.step()
             total_loss += loss.item()
-            total_mse, total_kld = mse.item(), kld.item()
+            total_mse, total_kld = total_mse+mse.item(), total_kld+kld.item()
             history.append(loss.item())
 
         epo, total_loss, total_mse, total_kld = f"Iteration {epoch + 1}/{n_epochs_per_iter}", total_loss/len(loader), total_mse/len(loader), total_kld/len(loader)
@@ -127,12 +127,14 @@ def pad_results(x_couples: list) -> list:
     """Pad results to the max length in the list"""
     print(x_couples[0].shape)
     max_length = max([x.shape[2] for x in x_couples])
+    print("Max length:", max_length)
     padded_results = []
     for x in x_couples:
         pad_size = max_length - x.shape[2]
         if pad_size > 0:
             pad_tensor = np.zeros((x.shape[0], x.shape[1], pad_size, x.shape[3]))
             padded_x = np.concatenate([x, pad_tensor], axis=2)
+            print("Padded shape:", padded_x.shape)
         else:
             padded_x = x
         if padded_x.shape[2] != max_length:
@@ -153,7 +155,7 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
     if verbose:
         print(f"{'Epoch':<30} {'Loss':<25} {'mse':<25} {'kld':<205}")
     for epoch in range(n_epochs_per_iter):
-        total_loss = 0
+        total_loss, total_mse, total_kld = 0, 0, 0
         for batch_data, batch_lengths in tqdm(loader, desc="Training final VAE", leave=False):
             batch_data = batch_data.to(device)
             batch_lengths = batch_lengths.to(device)
@@ -166,7 +168,7 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
             gradient_clipper.on_backward_end(model)
             optimizer.step()
             total_loss += loss.item()
-            total_mse, total_kld = mse.item(), kld.item()
+            total_mse, total_kld = total_mse + mse.item(), total_kld + kld.item()
             history.append(loss.item())
 
         epo, total_loss, total_mse, total_kld = f"Iteration {epoch + 1}/{n_epochs_per_iter}", total_loss/len(loader), total_mse/len(loader), total_kld/len(loader)
@@ -187,12 +189,6 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
         z_mean_all = []
         x_couple_all = []
         i=0
-        full_loader = DataLoader(dataset=full_loader.dataset,
-                                 batch_size=200,
-                                 shuffle=False,
-                                 collate_fn=full_loader.collate_fn,
-                                 drop_last=False,
-                                 pin_memory=full_loader.pin_memory)
         for batch_data, batch_lengths in tqdm(full_loader, desc="Extracting latent features", leave=False):
             i+=1
             print(i)
@@ -337,8 +333,8 @@ def train_iterative_vae_pipeline(
     }
 
 def main():
-    path_train = config.DIR_PREPROCESSED_DATA / f"dataset_ip_vae_train.pt"
-    #path_test = config.DIR_PREPROCESSED_DATA / f"dataset_ip_vae_test.pt"
+    path_train = config.DIR_PREPROCESSED_DATA / f"dataset_vae_train.pt"
+    #path_test = config.DIR_PREPROCESSED_DATA / f"dataset_vae_test.pt"
     train_set = torch.load(path_train)
     #test_set = torch.load(path_test)
 
@@ -374,6 +370,6 @@ def main():
 
 
 if __name__ == "__main__":
-    torch.backends.cudnn.enabled = False
+    torch.backends.cudnn.enabled = False        # issue to solve in the future
     main()
 
