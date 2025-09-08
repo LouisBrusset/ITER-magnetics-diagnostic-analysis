@@ -38,7 +38,8 @@ def vae_loss_function(
     z_mean: torch.Tensor, 
     z_logvar: torch.Tensor, 
     lengths: torch.Tensor, 
-    beta: float = 1.0
+    beta: float = 1.0,
+    fft_weight: float = 0.75
     ) -> tuple[torch.Tensor]:
 
     _, seq_length, _ = x.shape
@@ -50,11 +51,20 @@ def vae_loss_function(
     MSE = (MSE * mask).sum(dim=(1,2))        # Mask application
     num_valid_steps = mask.sum(dim=(1,2))    # Normalizing factor
     MSE = torch.where(num_valid_steps > 0, MSE / num_valid_steps, torch.zeros_like(MSE))
+    
     KLD = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp(), dim=1)
+
+    x_fft = torch.fft.fft(x, dim=1)
+    recon_fft = torch.fft.fft(x_recon, dim=1)
+    x_mag, x_phase = torch.abs(x_fft), torch.angle(x_fft)
+    recon_mag, recon_phase = torch.abs(recon_fft), torch.angle(recon_fft)
+    mag_loss = torch.nn.functional.l1_loss(recon_mag, x_mag, reduction='mean')
+    phase_loss = torch.nn.functional.l1_loss(recon_phase, x_phase, reduction='mean')
+    FFT = mag_loss + phase_loss
 
     MSE = torch.mean(MSE)
     KLD = torch.mean(KLD)
-    TOTAL = MSE + beta * KLD
+    TOTAL = MSE + beta * KLD + fft_weight * FFT
 
     return TOTAL, MSE, KLD
 

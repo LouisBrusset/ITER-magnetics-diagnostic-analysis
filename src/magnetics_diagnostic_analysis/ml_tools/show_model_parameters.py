@@ -70,7 +70,7 @@ if __name__ == "__main__":
     input_dim = 1
     hidden_dim = config.LSTM_HIDDEN_DIM
     latent_dim = config.LATENT_DIM
-    num_layers = config.NUM_LAYERS
+    num_layers = config.LSTM_NUM_LAYERS
     beta = config.BETA
 
     model = LSTMBetaVAE(input_dim, hidden_dim, latent_dim, num_layers)

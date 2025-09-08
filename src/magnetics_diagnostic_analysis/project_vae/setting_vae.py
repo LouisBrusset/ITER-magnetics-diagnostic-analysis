@@ -1,6 +1,7 @@
 from pathlib import Path
 # import yaml
 
+from magnetics_diagnostic_analysis.ml_tools.random_seed import seed_everything
 from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
 
 class Config:
@@ -34,33 +35,35 @@ class Config:
     SET_SEPARATION =  int(DATA_NUMBER * (1-train_test_rates))  # Train & Test split indice
 
     ### VAE architecture
-    LATENT_DIM = 50
-    LSTM_HIDDEN_DIM = 128
+    LATENT_DIM = 64
+    LSTM_HIDDEN_DIM = 200
     LSTM_NUM_LAYERS = 2
     LSTM_BPTT_STEPS = None
-    BETA = 2.0
+    BETA = 1.5
 
     ### Hyperparameters
-    BATCH_SIZE = 128
-    FIRST_LEARNING_RATE = 0.001
+    BATCH_SIZE = 32
+    FIRST_LEARNING_RATE = 0.0003
     WEIGHT_DECAY = 1e-5     # if needed
 
     ### Train parameters
     N_ITERATIONS = 1
-    N_EPOCHS = 2
+    N_EPOCHS = 13
     KDE_PERCENTILE_RATE = 0.05
-    DBSCAN_EPS = 0.0001
-    DBSCAN_MIN_SAMPLES = 30
+    DBSCAN_EPS = 0.0005
+    DBSCAN_MIN_SAMPLES = 15
     KNN_N_NEIGHBORS = 10
 
     ### Data scrapping from MAST API
-    RANDOM_SEED = 42
     GROUPS = ["magnetics"]
     STEADY_STATE = False  # Whether to apply steady state filtering or not
     RAW_DATA_FILE_NAME = f"data_{'_'.join(GROUPS)}.nc"
 
     ### Others
     BEST_MODEL_NAME = "model1"
+
+    ### Set seed for reproducibility
+    seed_everything(SEED)
 
     # Method to update parameters
     @classmethod

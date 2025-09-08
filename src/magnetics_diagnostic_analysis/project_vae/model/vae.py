@@ -6,19 +6,31 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 class LengthAwareLSTMEncoder(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int, num_layers: int) -> None:
         super().__init__()
-        self.encoder_lstm = nn.LSTM(input_dim, hidden_dim, num_layers, bidirectional=False, batch_first=True)
+        self.conv = nn.Sequential(
+            nn.Conv1d(input_dim, input_dim*2, kernel_size=(5,), stride=2, padding=2),
+            nn.SELU(),
+            nn.Conv1d(input_dim*2, input_dim*4, kernel_size=(5,), stride=2, padding=2),
+            nn.SELU(),
+            nn.Conv1d(input_dim*4, input_dim*8, kernel_size=(5,), stride=2, padding=2)
+        )
+        self.encoder_lstm = nn.LSTM(input_dim*8, hidden_dim, num_layers, bidirectional=False, batch_first=True)
         self.encoder_linear_mean = nn.Linear(hidden_dim, latent_dim)
         self.encoder_linear_logvar = nn.Linear(hidden_dim, latent_dim)
         #self.dropout = nn.Dropout(p=0.5)
 
     def forward(self, x_padded: torch.Tensor, lengths: torch.Tensor, hidden: tuple = None) -> tuple[torch.Tensor]:
         batch_size, _, _ = x_padded.shape
+        compressed_lengths = lengths.clone()
+        for _ in range(3):  # number of conv layers
+            compressed_lengths = torch.div(compressed_lengths + 1, 2, rounding_mode='floor')
+
+        x_padded = self.conv(x_padded.permute(0, 2, 1)).permute(0, 2, 1)
         if hidden is None or hidden[0] is None or hidden[1] is None:
             h0 = torch.zeros(self.encoder_lstm.num_layers, batch_size, self.encoder_lstm.hidden_size, device=x_padded.device)
             c0 = torch.zeros(self.encoder_lstm.num_layers, batch_size, self.encoder_lstm.hidden_size, device=x_padded.device)
             hidden = (h0, c0)
 
-        packed_input = pack_padded_sequence(x_padded, lengths.cpu(), batch_first=True, enforce_sorted=False)
+        packed_input = pack_padded_sequence(x_padded, compressed_lengths.cpu(), batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.encoder_lstm(packed_input)
         #output, output_lengths = pad_packed_sequence(packed_output, batch_first=True)
 
@@ -30,29 +42,64 @@ class LengthAwareLSTMEncoder(nn.Module):
 
 class LengthAwareLSTMDecoder(nn.Module):
     def __init__(self, latent_dim: int, hidden_dim: int, output_dim: int, num_layers: int) -> None:
+        assert hidden_dim % 8 == 0, "Hidden dimension must be divisible by 8."
+        assert hidden_dim//8 > output_dim, "Hidden dimension too small for the given output dimension."
         super().__init__()
-        self.decoder_linear_init = nn.Linear(latent_dim, hidden_dim * num_layers * 2)  # For hidden and cell states of each layer
-        self.decoder_lstm = nn.LSTM(hidden_dim, hidden_dim, num_layers, bidirectional=False, batch_first=True)
-        self.decoder_output_layer = nn.Linear(hidden_dim, output_dim)
-        #self.dropout = nn.Dropout(p=0.5)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
 
+        self.latent_projection = nn.Sequential(
+            nn.Linear(latent_dim, hidden_dim * 4),
+            nn.SELU(),
+            nn.Linear(hidden_dim * 4, hidden_dim * num_layers * 2)  # For hidden and cell states of each layer
+        )
+        self.decoder_lstm = nn.LSTM(hidden_dim, hidden_dim, num_layers, bidirectional=False, batch_first=True)
+        self.decoder_layers = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim * 2),
+            nn.SELU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.SELU(),
+            nn.Linear(hidden_dim, output_dim*8)
+        )
+        self.deconv = nn.Sequential(
+            nn.ConvTranspose1d(output_dim*8, output_dim*4, kernel_size=5, stride=2, padding=2, output_padding=1),
+            nn.SELU(),
+            nn.ConvTranspose1d(output_dim*4, output_dim*2, kernel_size=5, stride=2, padding=2, output_padding=1),
+            nn.SELU(),
+            nn.ConvTranspose1d(output_dim*2, output_dim, kernel_size=5, stride=2, padding=2, output_padding=1)
+        )
+        #self.dropout = nn.Dropout(p=0.5)
+
+        self.init_weights()
+
+    def init_weights(self):
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                nn.init.xavier_uniform_(param)
+            elif 'bias' in name:
+                nn.init.constant_(param, 0.0)
+
     def forward(self, z: torch.Tensor, lengths: torch.Tensor, hidden: tuple = None) -> torch.Tensor:
         batch_size, _ = z.shape
+
         if hidden is None or hidden[0] is None or hidden[1] is None:
-            init_states = self.decoder_linear_init(z)
+            init_states = self.latent_projection(z)
             h0 = init_states[:, :self.hidden_dim * self.num_layers].reshape(self.num_layers, batch_size, self.hidden_dim)
             c0 = init_states[:, self.hidden_dim * self.num_layers:].reshape(self.num_layers, batch_size, self.hidden_dim)
             hidden = (h0, c0)
 
-        max_length = torch.max(lengths)
-        input_seq = torch.zeros(batch_size, max_length, self.hidden_dim, device=z.device)
+        compressed_lengths = lengths.clone()
+        for _ in range(3):  # number of conv layers
+            compressed_lengths = torch.div(compressed_lengths + 1, 2, rounding_mode='floor')
+        max_compressed_len = torch.max(compressed_lengths).item()
+        input_seq = torch.zeros(batch_size, max_compressed_len, self.hidden_dim, device=z.device)
 
-        packed_input = pack_padded_sequence(input_seq, lengths.cpu(), batch_first=True, enforce_sorted=False)
+        packed_input = pack_padded_sequence(input_seq, compressed_lengths.cpu(), batch_first=True, enforce_sorted=False)
         packed_output, hidden_out = self.decoder_lstm(packed_input, hidden)
 
-        transformed_data = self.decoder_output_layer(packed_output.data)
+        transformed_data = self.decoder_layers(packed_output.data)
+
         output_packed = torch.nn.utils.rnn.PackedSequence(
             data=transformed_data, 
             batch_sizes=packed_output.batch_sizes,
@@ -61,7 +108,16 @@ class LengthAwareLSTMDecoder(nn.Module):
         )
         output, _ = pad_packed_sequence(output_packed, batch_first=True)
 
-        return output, hidden_out
+        deconv_output = self.deconv(output.permute(0, 2, 1)).permute(0, 2, 1)
+
+        max_len = torch.max(lengths).item()
+        if deconv_output.size(1) > max_len:
+            deconv_output = deconv_output[:, :max_len, :]
+        elif deconv_output.size(1) < max_len:
+            pad = torch.zeros(batch_size, max_len - deconv_output.size(1), self.output_dim, device=z.device)
+            deconv_output = torch.cat([deconv_output, pad], dim=1)
+
+        return deconv_output, hidden_out
     
 
 class LSTMBetaVAE(nn.Module):
