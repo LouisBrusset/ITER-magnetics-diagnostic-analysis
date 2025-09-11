@@ -76,6 +76,9 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
 
         lr_scheduler.step(current_loss)
 
+        path = Path(__file__).absolute().parent / "checkpoints/model_checkpointed.pth"
+        torch.save(model.state_dict(), path)
+
     return history, model
 
 def plot_history(history_train: list, history_valid: list) -> None:

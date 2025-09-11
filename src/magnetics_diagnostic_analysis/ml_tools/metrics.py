@@ -39,7 +39,7 @@ def vae_loss_function(
     z_logvar: torch.Tensor, 
     lengths: torch.Tensor, 
     beta: float = 1.0,
-    fft_weight: float = 0.75
+    fft_weight: float = 0.2
     ) -> tuple[torch.Tensor]:
 
     _, seq_length, _ = x.shape
