@@ -27,7 +27,8 @@ def load_model(model_name: str = config.BEST_MODEL_NAME):
         lstm_timesteps=config.LSTM_TIMESTEPS,
         lstm_effective_timesteps=config.LSTM_EFFECTIVE_TIMESTEPS
     )
-    mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name}.pth"))
+    #mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name}.pth"))
+    mscred.load_state_dict(torch.load(Path(__file__).absolute().parent.parent / "checkpoints/model_checkpointed.pth"))
     return mscred
 
 
@@ -70,10 +71,11 @@ def find_anomaly_threshold(
         i = 0
         for x in data_loader:
             x = x.to(device)
+            batch_size = x.size(0)
             x_recon = model(x)
             ano_scores = mscred_anomaly_score(x_recon, x)
 
-            anomalies_full[i*config.BATCH_SIZE : (i+1)*config.BATCH_SIZE] = ano_scores
+            anomalies_full[i*batch_size : (i+1)*batch_size] = ano_scores
             i += 1
 
     # Truncate the beginning of the timeserie to avoid initialization issues
@@ -114,11 +116,12 @@ def detect_anomalies_all(
         i = 0
         for x in data_loader:
             x = x.to(device)
+            batch_size = x.size(0)
             x_recon = model(x)
-            reconstructed_full[i*config.BATCH_SIZE : (i+1)*config.BATCH_SIZE] = x_recon.cpu().numpy()
+            reconstructed_full[i*batch_size : (i+1)*batch_size] = x_recon.cpu().numpy()
 
             ano_scores = mscred_anomaly_score(x_recon, x)
-            anomalies_full[i*config.BATCH_SIZE : (i+1)*config.BATCH_SIZE] = ano_scores
+            anomalies_full[i*batch_size : (i+1)*batch_size] = ano_scores
             i += 1
 
     ano_mask = anomalies_full > threshold
@@ -255,7 +258,7 @@ if __name__ == "__main__":
     ano_threshold, valid_anomaly_scores = find_anomaly_threshold(
         mscred, 
         valid_loader,
-        beta=0.2,               # retrain MSCRED with bigger anomaly too set beta between 1 and 2
+        beta=1.1,               # retrain MSCRED with bigger anomaly too set beta between 1 and 2
         device=device
     )
     print(f"\nAnomaly detection threshold: {ano_threshold:.4f}")
