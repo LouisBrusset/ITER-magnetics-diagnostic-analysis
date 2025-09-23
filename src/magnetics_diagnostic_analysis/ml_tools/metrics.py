@@ -86,3 +86,21 @@ def vae_reconstruction_error(
     mse = torch.where(num_valid_steps > 0, mse / num_valid_steps, torch.zeros_like(mse))
 
     return mse
+
+
+
+def scinet_loss(
+        possible_answer: torch.Tensor, 
+        a_corr: torch.Tensor, 
+        mean: torch.Tensor, 
+        logvar: torch.Tensor, 
+        beta: float = 0.001
+        ) -> torch.Tensor:
+    # prediction_loss = nn.MSELoss(reduction='none')(possible_answer, a_corr)
+    # kld_loss = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp(), dim=1).unsqueeze(-1)
+    # total_loss = prediction_loss + beta * kld_loss
+    # return torch.mean(total_loss)
+
+    recon_loss = torch.nn.MSELoss()(possible_answer.squeeze(), a_corr.squeeze())
+    kld_loss = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp(), dim=1).mean()
+    return recon_loss + beta * kld_loss, kld_loss, recon_loss

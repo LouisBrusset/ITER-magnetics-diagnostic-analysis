@@ -125,7 +125,8 @@ def main():
     continue_training = False
     if continue_training:
         mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name_to_continue}.pth"))
-    
+    mscred.load_state_dict(torch.load(Path(__file__).absolute().parent / "checkpoints/model_checkpointed.pth"))
+
     # Train
     try:
         history, trained_mscred = train(

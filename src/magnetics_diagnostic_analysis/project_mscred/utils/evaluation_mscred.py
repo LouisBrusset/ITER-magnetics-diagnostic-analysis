@@ -237,7 +237,7 @@ def detect_problematic_diagnostics(
 
 
 if __name__ == "__main__":
-    torch.backends.cudnn.enabled = False        # problem to fix in the future
+    torch.backends.cudnn.enabled = False        # problem to fix in the future: due to LSTM cells?
 
     device = config.DEVICE
     mscred = load_model(model_name=config.BEST_MODEL_NAME)
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     ano_threshold, valid_anomaly_scores = find_anomaly_threshold(
         mscred, 
         valid_loader,
-        beta=1.1,               # retrain MSCRED with bigger anomaly too set beta between 1 and 2
+        beta=1.15,               # retrain MSCRED with bigger anomaly too set beta between 1 and 2
         device=device
     )
     print(f"\nAnomaly detection threshold: {ano_threshold:.4f}")

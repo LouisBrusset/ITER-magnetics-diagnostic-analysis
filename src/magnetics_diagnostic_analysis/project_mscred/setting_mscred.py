@@ -51,7 +51,7 @@ class Config:
     RAW_DATA_FILE_NAME = f"data_{'_'.join(GROUPS)}_{SUFFIX}.nc"
 
     ### Others
-    BEST_MODEL_NAME = "model2"
+    BEST_MODEL_NAME = "model2_final"
 
     ### Set seed for reproducibility
     seed_everything(SEED)
