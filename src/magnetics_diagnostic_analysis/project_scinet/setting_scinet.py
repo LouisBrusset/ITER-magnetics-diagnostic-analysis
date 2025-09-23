@@ -10,10 +10,12 @@ class Config:
     ##########################################    
     ### Paths
     SUFFIX = "scinet"
-    # DIR_DATA = Path(__file__).absolute().parent.parent.parent.parent / "data"
+    DIR_DATA = Path(__file__).absolute().parent.parent.parent.parent / "data"
+    DIR_SYNTHETIC_DATA = DIR_DATA / f"synthetic/{SUFFIX}"
     # DIR_RAW_DATA = DIR_DATA / f"raw"
     # DIR_PREPROCESSED_DATA = DIR_DATA / f"preprocessed/{SUFFIX}"
     # DIR_PROCESSED_DATA = DIR_DATA / f"processed/{SUFFIX}"
+    DIR_PARAMS_CHECKPOINTS = Path(__file__).absolute().parent / f"checkpoints"
     DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
     DIR_FIGURES = Path(__file__).absolute().parent.parent.parent.parent / f"results/figures/{SUFFIX}"
 
@@ -35,26 +37,23 @@ class Config:
     TRAIN_VALID_SPLIT = 0.8
 
 
-    
-
-
     ### SCINET architecture
     M_INPUT_SIZE = 50
     M_ENC_HIDDEN_SIZES = [500, 100]
     M_LATENT_SIZE = 3
     M_QUESTION_SIZE = 1
-    M_DEC_HIDDEN_SIZES = [100, 100]
+    M_DEC_HIDDEN_SIZES = [100, 200, 100]
     M_OUTPUT_SIZE = 1
 
     ### Hyperparameters
     BATCH_SIZE_TRAIN = 512
     BATCH_SIZE_VALID = 512
-    FIRST_LEARNING_RATE = 1e-4
+    FIRST_LEARNING_RATE = 3e-4
     WEIGHT_DECAY = 1e-5     # if needed
-    KLD_BETA = 0.01
+    KLD_BETA = 0.003
 
     ### Train parameters
-    NUM_EPOCHS = 150
+    NUM_EPOCHS = 300
     ES_PATIENCE = 12
     ES_MIN_DELTA = 5e-4
     GC_MAX_NORM = 1.0
@@ -69,7 +68,7 @@ class Config:
     ### Data scrapping from MAST API
 
     ### Others
-    BEST_MODEL_NAME = "model1"
+    BEST_MODEL_NAME = "pendulum_scinet2"
 
    
 

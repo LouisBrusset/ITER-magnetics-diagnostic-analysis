@@ -5,7 +5,10 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data import random_split
 
+from magnetics_diagnostic_analysis.project_scinet.setting_scinet import config
 from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum import data_synthetic_pendulum
+
+
 
 
 def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), maxtime=5.0, timesteps=50):
@@ -13,6 +16,7 @@ def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), m
     questions = []
     params = []
     a_corr = []
+
     for _ in range(num_samples):
         # Build observations
         kapa = np.random.uniform(*kapa_range)
@@ -20,11 +24,14 @@ def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), m
         params.append((kapa, b))
         timeserie = data_synthetic_pendulum(kapa, b, timesteps=timesteps, maxtime=maxtime)
         observations.append(timeserie)
+
         # Build questions
-        question = np.random.uniform(timesteps, timesteps*2)
+        question = np.random.uniform(0, maxtime*2)
         questions.append(question)
+
         # Build answer to the question
-        a_corr.append(data_synthetic_pendulum(kapa, b, t=np.array(question), maxtime=maxtime, timesteps=50))
+        a_corr.append(data_synthetic_pendulum(kapa, b, t=np.array(question)))
+    
     return np.array(observations), np.array(questions), np.array(a_corr), np.array(params)
 
 
@@ -49,22 +56,36 @@ if __name__ == "__main__":
 
     # Create dataset
 
-    N_samples = 10000
-    kapa_range = (5.0, 6.0)
-    b_range = (0.2, 0.5)
-    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range)
+    N_samples = config.N_SAMPLES
+    kapa_range = config.KAPA_RANGE
+    b_range = config.B_RANGE
 
+    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range)
     dataset = PendulumDataset(observations, questions, answers, params)
+    print("\nCreation of dataset completed.\n")
 
 
     # Split into training and validation sets
 
-    train_valid_rate = 0.8
+    train_valid_rate = config.TRAIN_VALID_SPLIT
     train_size = int(train_valid_rate * len(dataset))
     valid_size = len(dataset) - train_size
 
     train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
 
+    print(f"Total samples: {len(dataset)}")
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(valid_dataset)}")
+    print("\nSplit into training and validation sets completed.\n")
+
+    # Save datasets
+    path_train = config.DIR_SYNTHETIC_DATA / "pendulum_scinet_train.pt"
+    path_valid = config.DIR_SYNTHETIC_DATA / "pendulum_scinet_valid.pt"
+    torch.save(train_dataset, path_train)
+    torch.save(valid_dataset, path_valid)
+
+    print(f"Training dataset saved at: {path_train}")
+    print(f"Validation dataset saved at: {path_valid}\n")
 
 
 

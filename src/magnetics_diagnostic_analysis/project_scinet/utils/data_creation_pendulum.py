@@ -1,6 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from magnetics_diagnostic_analysis.project_scinet.setting_scinet import config
+
+
+
+
 def data_synthetic_pendulum(kapa, b, timesteps=50, maxtime=5.0, m=1.0, A0=1.0, phi=0.0, t: np.array = None):
     if t is None:
         t = np.linspace(0, maxtime, timesteps)
@@ -9,18 +14,23 @@ def data_synthetic_pendulum(kapa, b, timesteps=50, maxtime=5.0, m=1.0, A0=1.0, p
 
     return A * np.cos(w * t + phi)
 
-def plot_synthetic_pendulum(timeserie, timesteps=50, maxtime=5.0):
+
+
+def plot_synthetic_pendulum(timeserie, timeserienext, question, answer, timesteps=50, maxtime=5.0):
     t = np.linspace(0, maxtime, timesteps)
-    y = timeserie
+    tnext = np.linspace(maxtime, maxtime*2, timesteps)
     plt.figure(figsize=(10, 6))
-    plt.plot(t, y)
+    plt.plot(t, timeserie, label='Observation', color='blue')
+    plt.plot(tnext, timeserienext, label='Prediction', color='orange')
+    plt.scatter(question, answer, color='red', label='Question/Answer', zorder=5)
     plt.title(f'Synthetic Pendulum')
     plt.xlabel('Time')
     plt.ylabel('Amplitude')
     plt.grid()
-    plt.show()
-
-
+    plt.legend()
+    path = config.DIR_FIGURES / "one_synthetic_pendulum.png"
+    plt.savefig(path)
+    plt.close()
 
 
 
@@ -28,9 +38,15 @@ def plot_synthetic_pendulum(timeserie, timesteps=50, maxtime=5.0):
 
 
 if __name__ == "__main__":
-    kapa_range = (5.0, 6.0)
-    b_range = (0.2, 0.5)
+    kapa_range = config.KAPA_RANGE
+    b_range = config.B_RANGE
     kapa = np.random.uniform(*kapa_range)
     b = np.random.uniform(*b_range)
-    pendulum1 = data_synthetic_pendulum(kapa, b)
-    plot_synthetic_pendulum(pendulum1)
+
+    pendulum1 = data_synthetic_pendulum(kapa, b, timesteps=config.TIMESTEPS, maxtime=config.MAXTIME)
+    pendulum1next = data_synthetic_pendulum(kapa, b, t=np.linspace(config.MAXTIME, config.MAXTIME*2, config.TIMESTEPS))
+
+    question = np.random.uniform(0, config.MAXTIME*2)
+    answer = data_synthetic_pendulum(kapa, b, t=np.array(question))
+
+    plot_synthetic_pendulum(pendulum1, pendulum1next, question, answer, timesteps=config.TIMESTEPS, maxtime=config.MAXTIME)
