@@ -89,7 +89,7 @@ if __name__ == "__main__":
     pendulum_net.load_state_dict(torch.load(path))
 
 
-    config.update(SEED=122)  # Change to see different predictions
+    config.update(SEED=123)  # Change to see different predictions
     from magnetics_diagnostic_analysis.ml_tools.random_seed import seed_everything
     seed_everything(config.SEED)
 

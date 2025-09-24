@@ -24,7 +24,7 @@ def load_trained_model(model_path: str, device: torch.device = torch.device('cpu
     return model
 
 
-def get_one_latent_activations(model: nn.Module, observation: np.array, device: torch.device = torch.device('cpu')) -> np.array:
+def get_one_latent_activation(model: nn.Module, observation: np.array, device: torch.device = torch.device('cpu')) -> np.array:
     torch.cuda.empty_cache()
     model.to(device).eval()
     observation_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0).to(device)
@@ -50,7 +50,7 @@ def get_latent_activations(model: nn.Module, kapa_range, b_range, pixel_by_line:
             # Generate observation
             observation = data_synthetic_pendulum(kapa, b, timesteps=config.TIMESTEPS, maxtime=config.MAXTIME)
             # Find latent activation with encoder only
-            latent_act = get_one_latent_activations(model, observation, device=device)
+            latent_act = get_one_latent_activation(model, observation, device=device)
             latent_activations.append(latent_act)
     latents = np.array(latent_activations).reshape(pixel_by_line, pixel_by_line, -1)
 

@@ -42,7 +42,7 @@ class Config:
     M_ENC_HIDDEN_SIZES = [500, 100]
     M_LATENT_SIZE = 3
     M_QUESTION_SIZE = 1
-    M_DEC_HIDDEN_SIZES = [100, 200, 100]
+    M_DEC_HIDDEN_SIZES = [100, 200, 200, 100]
     M_OUTPUT_SIZE = 1
 
     ### Hyperparameters
@@ -68,7 +68,7 @@ class Config:
     ### Data scrapping from MAST API
 
     ### Others
-    BEST_MODEL_NAME = "pendulum_scinet2"
+    BEST_MODEL_NAME = "pendulum_scinet3"
 
    
 
