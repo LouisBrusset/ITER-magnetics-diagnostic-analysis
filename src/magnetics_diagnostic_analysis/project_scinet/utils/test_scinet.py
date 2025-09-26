@@ -76,6 +76,8 @@ if __name__ == "__main__":
     device = config.DEVICE
     kapa_range = config.KAPA_RANGE
     b_range = config.B_RANGE
+    timesteps = config.TIMESTEPS
+    maxtime = config.MAXTIME
 
     pendulum_net = PendulumNet(
         input_size=config.M_INPUT_SIZE,
@@ -89,22 +91,24 @@ if __name__ == "__main__":
     pendulum_net.load_state_dict(torch.load(path))
 
 
-    config.update(SEED=123)  # Change to see different predictions
+    config.update(SEED=122)  # Change to see different predictions
     from magnetics_diagnostic_analysis.ml_tools.random_seed import seed_everything
     seed_everything(config.SEED)
 
     N_samples = 1
-    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range)
+    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range, maxtime=maxtime, timesteps=timesteps)
     possible_answer = make_one_prediction(pendulum_net, observations[0], questions[0], device=device)
-    plot_one_prediction(observations[0], questions[0], answers[0], possible_answer, maxtime=config.MAXTIME, timesteps=config.TIMESTEPS)
+    plot_one_prediction(observations[0], questions[0], answers[0], possible_answer, maxtime=maxtime, timesteps=timesteps)
     print("\nPrediction for one random question completed.")
 
 
     N_samples = 1
-    observations, _, _, params = build_dataset(N_samples, kapa_range, b_range)
-    answers = data_synthetic_pendulum(params[0][0], params[0][1], t=np.linspace(config.MAXTIME, config.MAXTIME*2, config.TIMESTEPS))
-    
-    questions = np.linspace(0, config.MAXTIME*2, config.TIMESTEPS)
+    observations, _, _, params = build_dataset(N_samples, kapa_range, b_range, maxtime=maxtime, timesteps=timesteps)
+    answers = data_synthetic_pendulum(params[0][0], params[0][1], t=np.linspace(maxtime, maxtime*2, timesteps))
+
+    questions = np.linspace(0, maxtime*2, timesteps)
     possible_answers = make_timeserie_prediction(pendulum_net, observations[0], questions, device=device)
-    plot_timeserie_prediction(observations[0], answers, possible_answers, maxtime=config.MAXTIME, timesteps=config.TIMESTEPS)
+    plot_timeserie_prediction(observations[0], answers, possible_answers, maxtime=maxtime, timesteps=timesteps)
     print("\nPrediction for full timeserie completed.\n")
+
+

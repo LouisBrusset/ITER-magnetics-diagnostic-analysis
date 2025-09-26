@@ -26,11 +26,11 @@ class Config:
 
 
     ### Data parameters
-    N_SAMPLES = 10000
-    KAPA_RANGE = (5.0, 6.0)
-    B_RANGE = (0.2, 0.5)
-    MAXTIME = 5.0
-    TIMESTEPS = 50
+    N_SAMPLES = 50000
+    KAPA_RANGE = (1.0, 10.0)
+    B_RANGE = (0.01, 0.1)
+    MAXTIME = 10.0
+    TIMESTEPS = 100
 
 
     ### DataLoader parameters
@@ -38,11 +38,11 @@ class Config:
 
 
     ### SCINET architecture
-    M_INPUT_SIZE = 50
+    M_INPUT_SIZE = TIMESTEPS
     M_ENC_HIDDEN_SIZES = [500, 100]
     M_LATENT_SIZE = 3
     M_QUESTION_SIZE = 1
-    M_DEC_HIDDEN_SIZES = [100, 200, 200, 100]
+    M_DEC_HIDDEN_SIZES = [400, 400]
     M_OUTPUT_SIZE = 1
 
     ### Hyperparameters
@@ -53,7 +53,7 @@ class Config:
     KLD_BETA = 0.003
 
     ### Train parameters
-    NUM_EPOCHS = 300
+    NUM_EPOCHS = 150
     ES_PATIENCE = 12
     ES_MIN_DELTA = 5e-4
     GC_MAX_NORM = 1.0
@@ -68,7 +68,7 @@ class Config:
     ### Data scrapping from MAST API
 
     ### Others
-    BEST_MODEL_NAME = "pendulum_scinet3"
+    BEST_MODEL_NAME = "pendulum_scinet_final"
 
    
 

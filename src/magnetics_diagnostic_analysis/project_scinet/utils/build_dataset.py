@@ -11,7 +11,7 @@ from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum i
 
 
 
-def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), maxtime=5.0, timesteps=50):
+def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), maxtime=5.0, timesteps=500):
     observations = []
     questions = []
     params = []
@@ -59,8 +59,10 @@ if __name__ == "__main__":
     N_samples = config.N_SAMPLES
     kapa_range = config.KAPA_RANGE
     b_range = config.B_RANGE
+    timesteps = config.TIMESTEPS
+    maxtime = config.MAXTIME
 
-    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range)
+    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range, maxtime=maxtime, timesteps=timesteps)
     dataset = PendulumDataset(observations, questions, answers, params)
     print("\nCreation of dataset completed.\n")
 
