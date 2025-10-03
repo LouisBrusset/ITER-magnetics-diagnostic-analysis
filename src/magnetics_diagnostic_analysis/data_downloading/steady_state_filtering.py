@@ -7,12 +7,12 @@ from scipy import signal
 def _keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     """
     Keep only the largest connected True component in a boolean mask.
-    
-    Parameters
-    mask: Input boolean array
-    
-    Returns
-    Boolean array with only the largest connected True component
+
+    Args:
+        mask (np.ndarray): Input boolean array
+
+    Returns:
+        np.ndarray: Boolean array with only the largest connected True component
     """
     # Find the start and end indices of True regions
     diff = np.diff(mask.astype(int))
@@ -39,14 +39,14 @@ def _keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
 def _filter_low_current_regions(ip: np.ndarray, mask: np.ndarray, min_current: float = 4.e4) -> np.ndarray:
     """
     Remove True values from mask where the current is below a threshold.
-    
-    Parameters
-    ip: 1D array of current values
-    mask: Boolean mask to filter
-    min_current: Minimum current threshold
-    
-    Returns
-    Filtered boolean mask
+
+    Args:
+        ip (np.ndarray): 1D array of current values
+        mask (np.ndarray): Boolean mask to filter
+        min_current (float): Minimum current threshold
+
+    Returns:
+        np.ndarray: Filtered boolean mask
     """
     new_mask = mask.copy()
     new_mask[np.abs(ip) < min_current] = False
@@ -56,16 +56,16 @@ def ip_filter(ip: np.ndarray, filter: str = 'default', min_current: float = None
     """
     Create a mask to select the permanent state phase of each shot.
 
-    Parameters
-    ip: 1D array of current values for one shot.
-    filter: Type of filter to apply. 'default' uses a low-pass FIR filter. Else 'bidirectional'.
-    min_current: Minimum current threshold for filtering
+    Args:
+        ip (np.ndarray): 1D array of current values for one shot.
+        filter (str): Type of filter to apply. 'default' uses a low-pass FIR filter. Else 'bidirectional'.
+        min_current (float): Minimum current threshold for filtering
 
-    Returns
-    A tuple containing:
-    - mask_clean: A boolean mask where True indicates the permanent state phase.
-    - flat_mask: initial flat regions mask before post-processing
-    - filtered_ip: filtered current signal
+    Returns:
+        tuple: A tuple containing:
+            - mask_clean (np.ndarray): A boolean mask where True indicates the permanent state phase.
+            - flat_mask (np.ndarray): initial flat regions mask before post-processing
+            - filtered_ip (np.ndarray): filtered current signal
     """
     # 1. Low-pass filtering FIR (=Finite Impulse Response)
     cutoff = 1.0e-3   # cutoff frequency (Hz)

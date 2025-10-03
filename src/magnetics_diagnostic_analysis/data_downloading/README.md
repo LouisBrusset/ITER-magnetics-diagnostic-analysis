@@ -1,57 +1,53 @@
-# Data Loading Module
+# Data Downloading Module
 
-This module provides utilities for downloading and loading data from the MAST experiment database.
+This module provides utilities for downloading, loading, and preprocessing data from the MAST experiment database.
 
 ## Table of Contents
 
 1. [Files](#-files)
 2. [Main Functions](#-main-functions)
-   - [`shot_list`](#shot_listcampaign-qualitynone)
-   - [`load_data`](#load_datafile_path-suffix-train_test_rate-shots-groups-permanent_state)
-   - [`build_level_2_data_per_shot`](#build_level_2_data_per_shotshots-groups-permanent_statefalse)
-   - [`ip_filter`](#ip_filterip-filterdefault-min_currentnone)
-3. [Filtering by Plasma Current Smoothness](#-filtering-by-plasma-current-smoothness)
-4. [Data Sources](#-data-sources)
-5. [Quick Example](#-quick-example)
-6. [Notes](#-notes)
+3. [Data Sources](#-data-sources)
+4. [Quick Example](#-quick-example)
+5. [Notes](#-notes)
 
 ## 📁 Files
 
 - **`data_downloading.py`** - Core functions for downloading and processing MAST data
-- **`permanent_state_filtering.py`** - Filtering utilities for tokamak permanent state detection
-- **`opening_test.ipynb`** - Example notebook for testing data loading functionality
+- **`steady_state_filtering.py`** - Filtering utilities for tokamak steady state detection based on the plasma current signal
+- **`data_washing.py`** - Data cleaning and preprocessing utilities, mainly removing NaNs by selecting or imputing
 
 ## 🔧 Main Functions
 
-### `shot_list(campaign="", quality=None)`
-Get a list of shot IDs from the MAST database.
+### Data Downloading and Processing
+Functions for retrieving and processing experimental data from the MAST database.
 
 ```python
-from magnetics_diagnostic_analysis.data_loading import shot_list
+from magnetics_diagnostic_analysis.data_downloading import data_downloading
 
-# Get all shots from M9 campaign
-shots = shot_list("M9")
-
-# Get only quality shots
-good_shots = shot_list("M9", quality=True)
+# Example usage (specific API depends on implementation)
+data = data_downloading.load_data()
 ```
 
-### `load_data(file_path, suffix, train_test_rate, shots, groups, permanent_state)`
-Load and cache data for training and testing.
+### Steady State Filtering
+Utilities for detecting and filtering tokamak steady state periods.
 
 ```python
-from magnetics_diagnostic_analysis.data_loading import load_data
+from magnetics_diagnostic_analysis.data_downloading import steady_state_filtering
 
-load_data(
-    file_path="data/",
-    suffix="_mscred",
-    train_test_rate=0.8,
-    shots=shots[:100],
-    groups=["magnetics"],
-    permanent_state=True,
-    verbose=True
-)
+# Apply steady state filtering
+filtered_data = steady_state_filtering.filter_steady_state(data)
 ```
+
+### Data Washing
+Data cleaning and preprocessing functions.
+
+```python
+from magnetics_diagnostic_analysis.data_downloading import data_washing
+
+# Clean and preprocess data
+clean_data = data_washing.clean_data(raw_data)
+```
+
 
 ### `build_level_2_data_per_shot(shots, groups, permanent_state=False)`
 Build dataset with one file per shot.

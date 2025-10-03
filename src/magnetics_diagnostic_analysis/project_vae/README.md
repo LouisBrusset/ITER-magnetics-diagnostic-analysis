@@ -7,27 +7,30 @@ Variational Autoencoder (VAE) implementation for anomaly detection in magnetics 
 1. [Files](#-files)
 2. [VAE Overview](#-vae-overview)
 3. [Mathematical Foundation](#-mathematical-foundation)
-4. [Key Components](#-key-components)
-   - [Encoder Network](#encoder-network)
-   - [Decoder Network](#decoder-network)
+4. [Core Components](#-core-components)
 5. [Usage Example](#-usage-example)
-6. [Data Preprocessing for VAE](#-data-preprocessing-for-vae)
-7. [Anomaly Detection Pipeline](#-anomaly-detection-pipeline)
-   - [Training Phase](#1-training-phase)
-   - [Detection Phase](#2-detection-phase)
-8. [Interpretability Features](#-interpretability-features)
-   - [Latent Space Analysis](#latent-space-analysis)
-   - [Feature Attribution](#feature-attribution)
-9. [Advanced Configurations](#-advanced-configurations)
-10. [Integration with Magnetics Analysis](#-integration-with-magnetics-analysis)
-   - [Multi-Shot Analysis](#multi-shot-analysis)
-   - [Channel-Specific Analysis](#channel-specific-analysis)
-11. [Best Practices](#-best-practices)
+6. [Model Architecture](#-model-architecture)
+7. [Training and Evaluation](#-training-and-evaluation)
+8. [Advanced Configurations](#-advanced-configurations)
+9. [Best Practices](#-best-practices)
 
 ## 📁 Files
 
-- **`data_scraping.py`** - Data preparation and scraping utilities for VAE
-- **`data_preprocessing.py`** - Data preprocessing specific to VAE requirements *(in development)*
+### Main Files
+- **`setting_vae.py`** - Configuration and settings for VAE
+- **`train_vae.py`** - Training pipeline for VAE model
+
+### Model Architecture
+- **`model/`** - VAE neural network implementation and components
+
+### Utilities
+- **`utils/data_scraping.py`** - Data preparation and scraping utilities for VAE
+- **`utils/dataset_building.py`** - Dataset construction and preprocessing
+- **`utils/evaluation_vae.py`** - Model evaluation and testing functions
+- **`utils/plot_training.py`** - Training visualization utilities
+
+### Checkpoints
+- **`checkpoints/`** - Saved model checkpoints and weights
 
 ## 🔬 VAE Overview
 
@@ -48,6 +51,44 @@ L_VAE = L_reconstruction + β × L_KL
 Where:
 - **L_reconstruction**: How well the model reconstructs input data
 - **L_KL**: Kullback-Leibler divergence regularization term
+
+## 🔧 Core Components
+
+### Model Training
+```python
+from magnetics_diagnostic_analysis.project_vae import train_vae
+
+# Train VAE model
+train_vae.main()
+```
+
+### Configuration
+```python
+from magnetics_diagnostic_analysis.project_vae import setting_vae
+
+# Load VAE settings
+config = setting_vae.load_config()
+```
+
+### Data Processing
+```python
+from magnetics_diagnostic_analysis.project_vae.utils import data_scraping, dataset_building
+
+# Prepare data for VAE training
+data = data_scraping.load_data()
+dataset = dataset_building.build_dataset(data)
+```
+
+### Evaluation and Visualization
+```python
+from magnetics_diagnostic_analysis.project_vae.utils import evaluation_vae, plot_training
+
+# Evaluate trained model
+results = evaluation_vae.evaluate_model(model, test_data)
+
+# Visualize training progress
+plot_training.plot_losses(training_history)
+```
 - **β**: Weighting parameter (β-VAE for disentanglement)
 
 ### Anomaly Score

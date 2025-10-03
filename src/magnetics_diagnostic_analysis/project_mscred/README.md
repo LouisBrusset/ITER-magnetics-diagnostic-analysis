@@ -6,22 +6,34 @@ Multi-Scale Convolutional Recurrent Encoder-Decoder (MSCRED) implementation for 
 
 1. [Files](#-files)
 2. [MSCRED Overview](#-mscred-overview)
-3. [Core Functions](#-core-functions)
-   - [`generate_signature_matrix_node`](#generate_signature_matrix_node)
-   - [`generate_train_test_data`](#generate_train_test_data)
-4. [Signature Matrix Generation](#-signature-matrix-generation)
-5. [Usage Example](#-usage-example)
-6. [Development Notebook](#-development-notebook)
-7. [Anomaly Detection Strategy](#-anomaly-detection-strategy)
-8. [Configuration Parameters](#-configuration-parameters)
-9. [Integration with Magnetics Data](#-integration-with-magnetics-data)
-10. [Best Practices](#-best-practices)
+3. [Core Components](#-core-components)
+4. [Usage Example](#-usage-example)
+5. [Model Architecture](#-model-architecture)
+6. [Training and Evaluation](#-training-and-evaluation)
+7. [Configuration Parameters](#-configuration-parameters)
+8. [Best Practices](#-best-practices)
 
 ## 📁 Files
 
-- **`data_scraping.py`** - Data preparation and scraping utilities for MSCRED
-- **`matrix_generator.py`** - Signature matrix generation for multivariate time series
-- **`test_grandes_lignes.ipynb`** - Main development and testing notebook
+### Main Files
+- **`setting_mscred.py`** - Configuration and settings for MSCRED
+- **`train_mscred.py`** - Training pipeline for MSCRED model
+
+### Model Architecture
+- **`model/mscred.py`** - MSCRED neural network implementation
+- **`model/convlstm.py`** - ConvLSTM components for MSCRED
+
+### Utilities
+- **`utils/matrix_generator.py`** - Signature matrix generation for multivariate time series
+- **`utils/dataloader_building.py`** - Data loading and batching utilities
+- **`utils/window_building.py`** - Time series windowing functions
+- **`utils/evaluation_mscred.py`** - Model evaluation and testing functions
+- **`utils/mast_data_scraping.py`** - MAST data processing utilities
+- **`utils/synthetic_anomaly_adding.py`** - Synthetic anomaly injection for testing
+- **`utils/synthetic_data_creation.py`** - Synthetic data generation utilities
+
+### Checkpoints
+- **`checkpoints/`** - Saved model checkpoints and weights
 
 ## 🔬 MSCRED Overview
 
@@ -31,23 +43,31 @@ MSCRED is a deep neural network designed for multivariate time-series anomaly de
 - Uses multi-scale convolution for feature extraction
 - Employs encoder-decoder architecture for reconstruction-based anomaly detection
 
-## 🔧 Core Functions
+## 🔧 Core Components
 
-### `generate_signature_matrix_node()`
-Generate signature matrices that capture relationships between time series variables.
-
+### Model Training
 ```python
-from magnetics_diagnostic_analysis.project_mscred import generate_signature_matrix_node
+from magnetics_diagnostic_analysis.project_mscred import train_mscred
 
-# Generate signature matrix for correlation analysis
-signature_matrix = generate_signature_matrix_node()
+# Train MSCRED model
+train_mscred.main()
 ```
 
-### `generate_train_test_data()`
-Prepare training and testing datasets in the format required by MSCRED.
-
+### Configuration
 ```python
-from magnetics_diagnostic_analysis.project_mscred import generate_train_test_data
+from magnetics_diagnostic_analysis.project_mscred import setting_mscred
+
+# Load MSCRED settings
+config = setting_mscred.load_config()
+```
+
+### Signature Matrix Generation
+```python
+from magnetics_diagnostic_analysis.project_mscred.utils import matrix_generator
+
+# Generate signature matrices for correlation analysis
+signature_matrix = matrix_generator.generate_signature_matrix()
+```
 
 # Generate formatted data for MSCRED training
 train_data, test_data = generate_train_test_data()

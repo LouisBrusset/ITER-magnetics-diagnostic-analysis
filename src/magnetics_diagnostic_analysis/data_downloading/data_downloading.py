@@ -1,15 +1,10 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-import fsspec
-import zarr
 
 import time
 import pathlib
 import tqdm
-import requests
-
-
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import ip_filter
@@ -17,14 +12,14 @@ from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering impor
 
 def shot_list(campaign: str = "", quality: bool = None) -> list[int]:
     """
-    Return a list of shot IDs for a given campaign.
+    Return a list of shot IDs for a given campaign or for the entire database.
 
-    Parameters
-    campaign: Campaign name to filter shots. If None, return all campaigns.
-    quality: If True, return only shots with 'cpf_useful' label. If False, return shots with 'cpf_abort' label.
-    
-    Returns
-    List of shot IDs.
+    Args:
+        campaign (str): Campaign name to filter shots. If None, return all campaigns.
+        quality (bool): If True, return only shots with 'cpf_useful' label. If False, return shots with 'cpf_abort' label.
+                        If None, return all shots regardless of quality.
+    Returns:
+        List of shot IDs.
     """
     URL = "https://mastapp.site"
     if campaign == "":
@@ -45,10 +40,13 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
     """
     Return a Dataset from the MAST Zarr store.
 
-    Parameters
-    shot: Shot ID to retrieve data for.
-    group: Diagnostic group to retrieve data from.
-    level: Data level to retrieve (default is 2).
+    Args:
+        shot (int): Shot ID to retrieve data for.
+        group (str): Diagnostic group to retrieve data from.
+        level (int): Data level to retrieve (default is 2).
+
+    Returns:
+        xr.Dataset: The Dask Dataset for the specified shot and group.
     """
     return xr.open_zarr(
         f"https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr",
@@ -57,19 +55,18 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
 
 
 
-def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1):
+def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1) -> xr.Dataset:
     """
     Retry loading a shot's data as a Dask Dataset with exponential backoff.
 
-    Parameters
-    shot_id: Shot ID to retrieve data for.
-    group: Diagnostic group to retrieve data from.
-    retries: Number of retry attempts (default is 3).
-    delay: Delay in seconds between retries (default is 5).
+    Args:
+        shot_id (int): Shot ID to retrieve data for.
+        group (str): Diagnostic group to retrieve data from.
+        retries (int): Number of retry attempts (default is 3).
+        delay (int): Delay in seconds between retries (default is 5).
 
-    Returns
-    xr.Dataset
-        The Dask Dataset for the specified shot and group.
+    Returns:
+        xr.Dataset: The Dask Dataset for the specified shot and group.
     or Error
     """
     for attempt in range(retries):
@@ -92,14 +89,15 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
 
     
     Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
-    
-    Parameters
-    shots: List of shot IDs to retrieve data for.
-    groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
-    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
 
-    Return
-    An xarray Dataset containing the requested diagnostic data.
+    Args:
+        shots (list[int]): List of shot IDs to retrieve data for.
+        groups (list[str]): List of diagnostic groups to retrieve.
+        steady_state (bool): If True, only retrieve shots during the steady state phase of the campaign -> call ip_filter function.
+        verbose (bool): If True, print additional information during processing.
+
+    Returns:
+        xr.Dataset: An xarray Dataset containing the requested diagnostic data.
     """
 
     dataset = []
@@ -192,14 +190,15 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
 def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
     Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
-    
-    Parameters
-    shots: List of shot IDs to retrieve data for.
-    groups: List of diagnostic groups to retrieve. If None, all groups are retrieved.
-    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
 
-    Return
-    An xarray Concatenated dataset containing the requested diagnostic data, aligned on 'time' with 'shot_index' and 'shot_id'.
+    Args:
+        shots (list[int]): List of shot IDs to retrieve data for.
+        groups (list[str]): List of diagnostic groups to retrieve.
+        steady_state (bool): If True, only retrieve shots during the steady state phase of the campaign -> call the ip_filter function.
+        verbose (bool): If True, print additional information during processing.
+
+    Returns:
+        xr.Dataset: An xarray Dataset containing the requested diagnostic data.
     """
     
     dataset = []
@@ -269,15 +268,18 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
     """
     Load data from cache or build it if not available.
 
-    Parameters
-    train_test_rate: Proportion of shots to use for training (1 - test).
-    shots: List of shot IDs to retrieve data for.
-    groups: List of diagnostic groups to retrieve data from.
-    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
-    random_seed: Seed for random number generator to shuffle shots.
-    
-    Return
-    An xarray Dataset containing the requested diagnostic data.
+    Args:
+        file_path (pathlib.Path): Path to the directory where the data files are stored.
+        suffix (str): Suffix to append to the file names.
+        train_test_rate (float): Proportion of shots to use for training.
+        shots (list[int]): List of shot IDs to retrieve data for.
+        groups (list[str]): List of diagnostic groups to retrieve data from.
+        steady_state (bool): If True, only retrieve shots during the steady state phase of the campaign.
+        random_seed (int): Seed for random number generator to shuffle shots.
+        verbose (bool): If True, print additional information during processing.
+
+    Returns:
+        None
     """
     assert 0.05 < train_test_rate < 0.95, "train_test_rate must be between 0.05 and 0.95"
 
@@ -318,17 +320,14 @@ def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: 
     """
     Load data from cache or build it if not available.
 
-    Parameters
-    file_path: Path to the directory where the data files are stored.
-    suffix: Suffix to append to the file names.
-    shots: List of shot IDs to retrieve data for.
-    groups: List of diagnostic groups to retrieve data from.
-    steady_state: If True, only retrieve shots during the steady state phase of the campaign.
-    random_seed: Seed for random number generator to shuffle shots.
-    verbose: If True, print additional information during processing.
+    Args:
+        shots (list[int]): List of shot IDs to retrieve data for.
+        groups (list[str]): List of diagnostic groups to retrieve data from.
+        steady_state (bool): If True, only retrieve shots during the steady state phase of the campaign.
+        verbose (bool): If True, print additional information during processing.
 
-    Return
-    An xarray Dataset containing the requested diagnostic data.
+    Returns:
+        None
     """
 
     path = config.DIR_RAW_DATA

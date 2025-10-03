@@ -7,7 +7,8 @@ A Python package for detecting faulty signals in magnetics diagnostics using sel
 This package provides tools and algorithms for analyzing magnetics diagnostic data from tokamak experiments, specifically designed to identify anomalies and faulty signals using advanced machine learning techniques including:
 
 - **MSCRED** (Multi-Scale Convolutional Recurrent Encoder-Decoder)
-- **VAE** (Variational Autoencoder) 
+- **Iterative VAE** (Variational Autoencoder) 
+- **SCINet** (Science Network -> discovery of physical concepts)
 - Traditional anomaly detection methods
 
 ## Table of Contents
@@ -33,11 +34,14 @@ This package provides tools and algorithms for analyzing magnetics diagnostic da
 
 ## 📦 Package Structure
 
-- **`data_loading/`** - Data downloading and preprocessing utilities
-- **`data_analysis/`** - Analysis tools and Jupyter notebooks
-- **`ml_tools/`** - Machine learning utilities (early stopping, etc.)
-- **`project_mscred/`** - MSCRED implementation for anomaly detection
-- **`project_vae/`** - VAE implementation for anomaly detection
+- **`data_downloading/`** - Data downloading and preprocessing utilities for MAST experiment data
+- **`ml_tools/`** - Machine learning utilities (metrics, training callbacks, 2D projection, etc.)
+- **`project_mscred/`** - MSCRED implementation for multivariate time series anomaly detection
+- **`project_vae/`** - VAE implementation for anomaly detection in magnetics diagnostics
+- **`project_scinet/`** - SCINet implementation for physical parameter recovery
+- **`notebooks/`** - Jupyter notebooks for exploration and experiments of architectures and of the FAIR-MAST dataset API
+- **`data/`** - Raw, preprocessed, processed, and synthetic datasets
+- **`results/`** - Model parameters, figures, and analysis results
 
 ## 🚀 Getting Started
 
@@ -79,66 +83,59 @@ This package provides tools and algorithms for analyzing magnetics diagnostic da
    # Dev mod
    pip install -e .
 
-   #Without dev dependencies
+   # Without dev dependencies
    pip install .
+
+   # Using uv
+   uv pip install -e .
+   uv pip install .
    ```
 
 ## 📈 Usage
 
-### Quick Start
+### Model Training Examples
 
 ```python
-import magnetics_diagnostic_analysis as mda
+# MSCRED training
 
-# Get list of shots from M9 campaign
-shots = mda.shot_list("M9")
-
-# Load data for analysis
-mda.load_data(
-    file_path="data/",
-    suffix="_analysis", 
-    train_test_rate=0.8,
-    shots=shots[:10],
-    groups=["magnetics"],
-    permanent_state=True
-)
-
-# Initialize early stopping for training
-early_stop = mda.EarlyStopping(patience=10)
 ```
 
-### Data Loading
+### Data Loading and Processing
 
 ```python
-from magnetics_diagnostic_analysis.data_loading import shot_list, load_data
+from magnetics_diagnostic_analysis.data_downloading import data_downloading, data_washing
 
-# Get shots with specific criteria
-good_shots = shot_list(campaign="M9", quality=True)
-
-# Build dataset for specific shots
-from magnetics_diagnostic_analysis.data_loading import build_level_2_data_per_shot
-
-dataset = build_level_2_data_per_shot(
-    shots=good_shots[:5],
-    groups=["magnetics", "efit"],
-    permanent_state=True
-)
 ```
+
+
 
 ## 🔧 Development
 
 ### Running Tests
 
 ```bash
+# Run all tests
 pytest tests/
+
+# Run tests with coverage
+pytest --cov=src tests/
+
+# Run specific test modules
+pytest tests/test_mscred/
+pytest tests/test_vae/
+pytest tests/test_scinet/
 ```
 
 ### Code Formatting
 
 ```bash
+# Format code (if using black)
 black src/
+
+# Check code style (if using flake8)
 flake8 src/
 ```
+
 
 ### Type Checking
 
@@ -146,12 +143,12 @@ flake8 src/
 mypy src/
 ```
 
+
 ## 📊 Data Source
 
 The data comes from the MAST (Mega Amp Spherical Tokamak) experiment, accessible through:
 - **MAST Data Portal**: https://mastapp.site/
-- **Campaign**: M9 (primary focus)
-- **Diagnostics**: Summary, Magnetics, EFM (EFIT reconstructions)
+- **Diagnostics**: Summary, Pulse_schedule, Magnetics, EFM (EFIT reconstructions)
 
 ## 🤝 Contributing
 
@@ -176,7 +173,7 @@ This project is licensed under the terms specified in the LICENSE file.
 
 - ITER Organization for providing the internship opportunity
 - MAST team for data access and support
-- École des Mines de Paris for academic supervision and providing knowlodge
+- École des Mines de Paris for academic supervision and providing knowledge
 
 ## 📚 References
 

@@ -1,52 +1,69 @@
-# Data Analysis Module
+# Notebooks - Exploration
 
-This module contains tools and Jupyter notebooks for analyzing magnetics diagnostic data from tokamak experiments.
+This directory contains Jupyter notebooks for exploratory data analysis of magnetics diagnostic data from tokamak experiments.
 
 ## Table of Contents
 
-1. [Files](#-files)
-2. [Available Notebooks](#-available-notebooks)
-   - [`dataframe_analysis.ipynb`](#dataframe_analysisipynb)
-   - [`metadata_analysis.ipynb`](#metadata_analysisipynb)
-3. [Key Features](#-key-features)
-4. [Quick Start](#-quick-start)
-5. [Example Analysis Workflow](#-example-analysis-workflow)
-6. [Data Sources](#-data-sources)
-7. [Analysis Outputs](#-analysis-outputs)
-8. [Configuration](#-configuration)
-9. [Tips](#-tips)
-10. [Goals](#goals)
-11. [Files and Functionalities](#files-and-functionalities)
-12. [Installation](#installation)
-
-## 📁 Files
-
-- **`dataframe_analysis.ipynb`** - Interactive analysis of loaded datasets
-- **`metadata_analysis.ipynb`** - Comprehensive metadata analysis of MAST shots
-- +
+1. [Available Notebooks](#-available-notebooks)
+2. [Key Features](#-key-features)
+3. [Quick Start](#-quick-start)
+4. [Data Sources](#-data-sources)
+5. [Analysis Outputs](#-analysis-outputs)
 
 ## 📊 Available Notebooks
 
-### `dataframe_analysis.ipynb`
-Interactive analysis of the processed magnetics data including:
-- Dataset structure exploration
-- Variable and channel separation
-- Data quality assessment
-- Statistical summaries
+### `cleaned_dataframe_opening_test.ipynb`
+Testing and validation of cleaned dataframe loading procedures:
+- Dataset loading verification
+- Data structure validation
+- Quality checks for preprocessed data
 
-```python
-# Key functionality from this notebook:
-def filter_xr_dataset_channels(data_train: xr.Dataset, var_channel_df: pd.DataFrame) -> xr.Dataset:
-    """Filter xarray dataset based on good variables/channels"""
-    # Implementation for filtering datasets
-```
-
-### `metadata_analysis.ipynb`
+### `mast_metadata_analysis.ipynb`
 Comprehensive analysis of MAST experiment metadata:
 - Shot quality assessment
 - Campaign statistics
 - Diagnostic availability analysis
 - Data completeness evaluation
+
+### `mast_shots_choice.ipynb`
+Analysis and selection criteria for MAST shots:
+- Shot filtering strategies
+- Quality metrics evaluation
+- Selection criteria development
+
+### `scrapped_dataframe_analysis.ipynb`
+Analysis of scraped and processed dataframes:
+- Data structure exploration
+- Variable and channel analysis
+- Statistical summaries
+- Data quality assessment
+
+## 🔧 Key Features
+
+- **Interactive Exploration**: Step-by-step data analysis workflows
+- **Metadata Analysis**: Comprehensive examination of experimental parameters
+- **Quality Assessment**: Data validation and filtering procedures
+- **Visualization**: Statistical plots and data distribution analysis
+
+## 🚀 Quick Start
+
+1. Navigate to the notebooks directory
+2. Start Jupyter Lab or Jupyter Notebook
+3. Open any notebook to begin exploration
+4. Follow the documented workflow in each notebook
+
+## 📈 Data Sources
+
+- MAST tokamak experimental database
+- Magnetics diagnostic measurements
+- Experimental metadata and shot parameters
+
+## 📋 Analysis Outputs
+
+- Data quality reports
+- Statistical summaries
+- Visualization plots
+- Processed datasets ready for ML analysis
 
 **Key objectives addressed:**
 - How many shots in the M9 campaign?

@@ -2,12 +2,14 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 
-import json
-from pathlib import Path
-
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 
 def print_dataset_info(ds: xr.Dataset) -> None:
+    """
+    Print information about the dataset including variable names, shapes, dimensions, and NaN counts.
+    Args:
+        ds (xr.Dataset): The xarray Dataset to inspect.
+    """
     print(f"{'\nVariable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
     for var in ds.data_vars:
         shape = ds[var].shape
@@ -65,14 +67,14 @@ def clean_data(vars: list[str], group:str = "magnetics", suffix: str = "mscred",
     """
     Clean the dataset by removing NaN values and selecting good variables.
 
-    Parameters:
-    vars (list[str]): The list of variable names to keep.
-    group (str): The group name for the dataset.
-    suffix (str): The suffix for the dataset file.
-    verbose (bool): If True, print dataset information before and after cleaning.
+    Args:
+        vars (list[str]): The list of variable names to keep.
+        group (str): The group name for the dataset.
+        suffix (str): The suffix for the dataset file.
+        verbose (bool): If True, print dataset information before and after cleaning.
 
     Returns:
-    None : We directly saved the cleaned dataset to a NetCDF file.
+        None : We directly saved the cleaned dataset to a NetCDF file.
     """
     # Load the dataset
     path = config.DIR_RAW_DATA / config.RAW_DATA_FILE_NAME

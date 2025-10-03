@@ -5,49 +5,73 @@ This module contains machine learning utilities and tools for training deep lear
 ## Table of Contents
 
 1. [Files](#-files)
-2. [Classes and Functions](#-classes-and-functions)
-   - [`EarlyStopping`](#earlystopping)
-     - [Constructor](#constructor)
-     - [Methods](#methods)
-       - [`check_stop`](#check_stopcurrent_loss-float-model---bool)
-       - [`restore_best_weights`](#restore_best_weightsmodel---none)
+2. [Core Components](#-core-components)
+   - [Training Callbacks](#training-callbacks)
+   - [Metrics](#metrics)
+   - [Preprocessing](#preprocessing)
+   - [Device Selection](#device-selection)
+   - [Other Utilities](#other-utilities)
 3. [Usage Examples](#-usage-examples)
-   - [Basic Usage](#basic-usage)
-   - [Advanced Configuration](#advanced-configuration)
 4. [Key Features](#-key-features)
-5. [Integration with MSCRED/VAE](#-integration-with-mscredvae)
-6. [Customization](#-customization)
-7. [Best Practices](#-best-practices)
+5. [Best Practices](#-best-practices)
 
 ## 📁 Files
 
-- **`early_stopping.py`** - Early stopping implementation for training loops
+- **`train_callbacks.py`** - Training callbacks including early stopping
+- **`metrics.py`** - Evaluation metrics for model performance
+- **`preprocessing.py`** - Data preprocessing utilities
+- **`projection_2d.py`** - 2D projection methods for visualization
+- **`pytorch_device_selection.py`** - PyTorch device selection utilities
+- **`random_seed.py`** - Random seed management for reproducibility
+- **`show_model_parameters.py`** - Model parameter inspection tools
 
-## 🔧 Classes and Functions
+## 🔧 Core Components
 
-### `EarlyStopping`
-A utility class for implementing early stopping during model training to prevent overfitting.
+### Training Callbacks
+Training utilities including early stopping and other callback functions.
 
-#### Constructor
 ```python
-EarlyStopping(min_delta: float = 0.001, patience: int = 5)
+from magnetics_diagnostic_analysis.ml_tools import train_callbacks
+
+# Example usage for training callbacks
+callback = train_callbacks.EarlyStopping(patience=10, min_delta=0.001)
 ```
 
-**Parameters:**
-- `min_delta`: Minimum change in the monitored quantity to qualify as an improvement
-- `patience`: Number of epochs with no improvement after which training will be stopped
-
-#### Methods
-
-##### `check_stop(current_loss: float, model) -> bool`
-Check if training should be stopped based on the current loss.
+### Metrics
+Evaluation metrics for assessing model performance.
 
 ```python
-early_stop = EarlyStopping(min_delta=0.001, patience=10)
+from magnetics_diagnostic_analysis.ml_tools import metrics
 
-for epoch in range(max_epochs):
-    # Training loop
-    train_loss = train_model()
+# Calculate evaluation metrics
+score = metrics.calculate_metric(predictions, targets)
+```
+
+### Preprocessing
+Data preprocessing functions for machine learning pipelines.
+
+```python
+from magnetics_diagnostic_analysis.ml_tools import preprocessing
+
+# Preprocess data for ML models
+processed_data = preprocessing.preprocess(raw_data)
+```
+
+### Device Selection
+PyTorch device selection and management.
+
+```python
+from magnetics_diagnostic_analysis.ml_tools import pytorch_device_selection
+
+# Select appropriate device (CPU/GPU)
+device = pytorch_device_selection.get_device()
+```
+
+### Other Utilities
+
+- **2D Projections**: Visualization utilities for high-dimensional data
+- **Random Seed**: Reproducibility tools for consistent results
+- **Model Parameters**: Tools for inspecting model architecture and parameters
     val_loss = validate_model()
     
     # Check if should stop
