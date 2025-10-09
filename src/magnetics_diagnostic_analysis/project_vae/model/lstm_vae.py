@@ -4,7 +4,28 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LengthAwareLSTMEncoder(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int, num_layers: int) -> None:
+    """
+    LSTM encoder that processes input sequences and produces latent representations.
+    It uses convolutional layers to downsample the input sequence before feeding it to the LSTM.
+
+    Architecture:
+        - Three convolutional layers to downsample the input sequence.
+        - An LSTM to capture temporal dependencies, handling variable lengths with packed sequences.
+        - Two linear layers to produce the mean and log-variance of the latent variable distribution.
+
+    Args:
+        input_dim: Dimensionality of the input features.
+        hidden_dim: Dimensionality of the LSTM hidden states.
+        latent_dim: Dimensionality of the latent space.
+        num_layers: Number of LSTM layers.
+    """
+    def __init__(
+            self, 
+            input_dim: int, 
+            hidden_dim: int, 
+            latent_dim: int, 
+            num_layers: int
+            ) -> None:
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv1d(input_dim, input_dim*2, kernel_size=(5,), stride=2, padding=2),
@@ -18,7 +39,20 @@ class LengthAwareLSTMEncoder(nn.Module):
         self.encoder_linear_logvar = nn.Linear(hidden_dim, latent_dim)
         #self.dropout = nn.Dropout(p=0.5)
 
-    def forward(self, x_padded: torch.Tensor, lengths: torch.Tensor, hidden: tuple = None) -> tuple[torch.Tensor]:
+    def forward(
+            self, 
+            x_padded: torch.Tensor, 
+            lengths: torch.Tensor, 
+            hidden: tuple = None
+            ) -> tuple[torch.Tensor]:
+        """
+        Forward pass of the encoder.
+
+        Args:
+            x_padded: Padded input sequences of shape (batch_size, seq_len, input_dim).
+            lengths: Actual lengths of each sequence in the batch.
+            hidden: Optional initial hidden and cell states for the LSTM. Useful in the truncated BPTT. If None, they are initialized to zeros.
+        """
         batch_size, _, _ = x_padded.shape
         compressed_lengths = lengths.clone()
         for _ in range(3):  # number of conv layers
@@ -41,7 +75,28 @@ class LengthAwareLSTMEncoder(nn.Module):
     
 
 class LengthAwareLSTMDecoder(nn.Module):
-    def __init__(self, latent_dim: int, hidden_dim: int, output_dim: int, num_layers: int) -> None:
+    """
+    LSTM decoder that reconstructs the input sequence from the latent space.
+
+    Architecture:
+        - Projects the latent vector to initialize the hidden and cell states of the LSTM.
+        - Uses an LSTM to generate sequences, handling variable lengths with packed sequences.
+        - Applies linear layers and transposed convolutions to upsample and reconstruct the original input dimensions
+        - Ensures the output sequence matches the original input length by trimming or padding as necessary.
+    
+    Args:
+        latent_dim: Dimensionality of the latent space.
+        hidden_dim: Dimensionality of the LSTM hidden states.
+        output_dim: Dimensionality of the output features (should match input_dim of the encoder).
+        num_layers: Number of LSTM layers.
+    """
+    def __init__(
+            self, 
+            latent_dim: int, 
+            hidden_dim: int, 
+            output_dim: int, 
+            num_layers: int
+            ) -> None:
         assert hidden_dim % 8 == 0, "Hidden dimension must be divisible by 8."
         assert hidden_dim//8 > output_dim, "Hidden dimension too small for the given output dimension."
         super().__init__()
@@ -74,13 +129,33 @@ class LengthAwareLSTMDecoder(nn.Module):
         self.init_weights()
 
     def init_weights(self):
+        """
+        Initialize weights using Xavier uniform for weights and zeros for biases.
+        """
         for name, param in self.named_parameters():
             if 'weight' in name:
                 nn.init.xavier_uniform_(param)
             elif 'bias' in name:
                 nn.init.constant_(param, 0.0)
 
-    def forward(self, z: torch.Tensor, lengths: torch.Tensor, hidden: tuple = None) -> torch.Tensor:
+    def forward(
+            self, 
+            z: torch.Tensor, 
+            lengths: torch.Tensor, 
+            hidden: tuple = None
+            ) -> torch.Tensor:
+        """
+        Forward pass of the decoder.
+
+        Args:
+            z: Latent vectors of shape (batch_size, latent_dim).
+            lengths: Actual lengths of each sequence in the batch.
+            hidden: Optional initial hidden and cell states for the LSTM. Useful in the truncated BPTT. If None, they are initialized from z.
+        
+        Returns:
+            deconv_output: Reconstructed sequences of shape (batch_size, seq_len, output_dim).
+            hidden_out: Final hidden and cell states from the LSTM.
+        """
         batch_size, _ = z.shape
 
         if hidden is None or hidden[0] is None or hidden[1] is None:
@@ -121,19 +196,69 @@ class LengthAwareLSTMDecoder(nn.Module):
     
 
 class LSTMBetaVAE(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int, lstm_num_layers: int, bptt_steps: None | int = None) -> None:
+    """
+    LSTM-based Variational Autoencoder (VAE) with length-aware mechanisms.
+    Supports both full Backpropagation Through Time (BPTT) and truncated BPTT (t-BPTT) for training on long sequences.
+
+    Args:
+        input_dim: Dimensionality of the input features.
+        hidden_dim: Dimensionality of the LSTM hidden states.
+        latent_dim: Dimensionality of the latent space.
+        lstm_num_layers: Number of LSTM layers in both encoder and decoder.
+        bptt_steps: If specified, enables truncated BPTT with the given number of steps. If None, full BPTT is used.
+
+    Returns:
+        reconstruction: Reconstructed sequences of shape (batch_size, seq_len, input_dim).
+        z_mean: Mean of the latent variable distribution of shape (batch_size, latent_dim).
+        z_logvar: Log-variance of the latent variable distribution of shape (batch_size, latent_dim).
+    """
+    def __init__(
+            self, 
+            input_dim: int, 
+            hidden_dim: int, 
+            latent_dim: int, 
+            lstm_num_layers: int, 
+            bptt_steps: None | int = None
+            ) -> None:
         super().__init__()
         self.encoder = LengthAwareLSTMEncoder(input_dim, hidden_dim, latent_dim, lstm_num_layers)
         self.decoder = LengthAwareLSTMDecoder(latent_dim, hidden_dim, input_dim, lstm_num_layers)
         self.bptt_steps = bptt_steps
         self.latent_dim = latent_dim
 
-    def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> tuple[torch.Tensor]:
+    def forward(
+            self, 
+            x: torch.Tensor, 
+            lengths: torch.Tensor
+            ) -> tuple[torch.Tensor]:
+        """
+        This function handles both full BPTT and truncated BPTT based on the bptt_steps parameter.
+        If bptt_steps is None, it performs full BPTT. Otherwise, it performs truncated BPTT.
+        """
         if self.bptt_steps is not None:
             return self._forward_pass_with_Truncated_BPTT(x, lengths)
         return self._forward_pass_with_Full_BPTT(x, lengths)
 
-    def _forward_pass_with_Truncated_BPTT(self, x: torch.Tensor, lengths: torch.Tensor) -> tuple[torch.Tensor]:
+    def _forward_pass_with_Truncated_BPTT(
+            self, 
+            x: torch.Tensor, 
+            lengths: torch.Tensor
+            ) -> tuple[torch.Tensor]:
+        """
+        Forward pass with truncated backpropagation through time (t-BPTT).
+        The input sequences are processed in segments of length bptt_steps.
+        Hidden states are detached between segments to limit the computational graph size. It allows training on longer sequences without running out of memory.
+        It handles variable-length sequences using the provided lengths.
+        The tensor initialization and management of hidden states ensure that only active sequences are processed in each segment.
+
+        Args:
+            x: Padded input sequences of shape (batch_size, seq_len, input_dim).
+            lengths: Actual lengths of each sequence in the batch.
+        Returns:
+            reconstruction: Reconstructed sequences of shape (batch_size, seq_len, input_dim).
+            z_mean: Mean of the latent variable distribution of shape (batch_size, latent_dim).
+            z_logvar: Log-variance of the latent variable distribution of shape (batch_size, latent_dim).
+        """
         batch_size, seq_len, _ = x.shape
         reconstructions = []
         all_z_means = []
@@ -240,13 +365,36 @@ class LSTMBetaVAE(nn.Module):
         
         return reconstruction, z_mean, z_logvar
 
-    def _forward_pass_with_Full_BPTT(self, x: torch.Tensor, lengths: torch.Tensor) -> tuple[torch.Tensor]:
+    def _forward_pass_with_Full_BPTT(
+            self, 
+            x: torch.Tensor, 
+            lengths: torch.Tensor
+            ) -> tuple[torch.Tensor]:
+        """
+        Forward pass with full backpropagation through time (BPTT).
+        It handles variable-length sequences using the provided lengths.
+        The entire sequence is processed in one go, allowing gradients to flow through the entire sequence.
+
+        Args:
+            x: Padded input sequences of shape (batch_size, seq_len, input_dim).
+            lengths: Actual lengths of each sequence in the batch.
+
+        Returns:
+            reconstruction: Reconstructed sequences of shape (batch_size, seq_len, input_dim).
+            z_mean: Mean of the latent variable distribution of shape (batch_size, latent_dim).
+            z_logvar: Log-variance of the latent variable distribution of shape (batch_size,
+        """
         z_mean, z_logvar, _ = self.encoder(x, lengths)
         z = self.reparameterize(z_mean, z_logvar)
         x_reconstructed, _ = self.decoder(z, lengths)
         return x_reconstructed, z_mean, z_logvar
 
-    def reparameterize(self, mean: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+    def reparameterize(
+            self, 
+            mean: torch.Tensor, 
+            logvar: torch.Tensor
+            ) -> torch.Tensor:
+        """Reparameterization trick to sample from N(mean, var) to create a latent variable."""
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mean + eps * std

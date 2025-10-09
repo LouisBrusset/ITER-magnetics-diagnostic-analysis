@@ -1,7 +1,7 @@
 import torch
 
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
-from magnetics_diagnostic_analysis.project_vae.model.vae import LSTMBetaVAE
+from magnetics_diagnostic_analysis.project_vae.model.lstm_vae import LSTMBetaVAE
 
 
 def print_model_parameters(model, model_name="LSTMBetaVAE"):

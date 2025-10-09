@@ -7,6 +7,7 @@ from pathlib import Path
 
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
 
+
 def find_seq_length(data: xr.Dataset) -> np.ndarray:
     # Find the length of each sequence in the dataset
     seq_indices = data['shot_index'].values
@@ -14,6 +15,16 @@ def find_seq_length(data: xr.Dataset) -> np.ndarray:
 
 
 class MultivariateTimeSerieDataset(Dataset):
+    """
+    Custom Dataset for multivariate time series data stored in an xarray Dataset.
+    Each time series is identified by a unique shot_index.
+
+    Args:
+        data (xr.Dataset): The input xarray Dataset containing time series data.
+        n_chan_to_keep (int): Number of channels to keep for multivariate data.
+        n_subsample (int): Subsampling factor to reduce the temporal resolution.
+        max_length (int): Maximum length of each time series sequence.
+    """
     def __init__(self, data: xr.Dataset, n_chan_to_keep: int = 4, n_subsample: int = 10, max_length: int = 3000):
         # Group data by shot_index
         self.shot_indices = data['shot_index'].values
@@ -55,7 +66,18 @@ class MultivariateTimeSerieDataset(Dataset):
     
 
 class OneVariableTimeSerieDataset(Dataset):
-    def __init__(self, data: xr.Dataset, var_name: str = "ip", chan_to_keep: None | int = 1, n_subsample: int = 12, max_length: int = 3000, normalize: bool = True):
+    """
+    Custom Dataset for univariate time series data stored in an xarray Dataset.
+    Each time series is identified by a unique shot_index.
+
+    Args:
+        data (xr.Dataset): The input xarray Dataset containing time series data.
+        var_name (str): Name of the variable to extract from the dataset.
+        chan_to_keep (int | None): Channel index to keep if the variable has multiple channels.
+        n_subsample (int): Subsampling factor to reduce the temporal resolution.
+        max_length (int): Maximum length of each time series sequence.
+    """
+    def __init__(self, data: xr.Dataset, var_name: str = "ip", chan_to_keep: None | int = 1, n_subsample: int = 12, max_length: int = 3000):
         # Group data by shot_index
         self.shot_indices = data['shot_index'].values
         self.unique_shots = np.unique(self.shot_indices)
@@ -92,16 +114,18 @@ def create_datasets(
     save: bool = True,
 ) -> tuple[Dataset]:
     """
-    Create train, validation and test data loaders from time series data
+    Create train, and test data loaders from time series data
     
     Args:
         data: xarray Dataset with shot_index variable
-        batch_size: batch size for data loaders
-        set_separation: boundarie between train and test sets
-        device: device to load data on
+        set_separation: boundary between train and test sets in number of time steps
+        total_length: total number of time steps to consider from the dataset
+        rd_seed: random seed for reproducibility
+        multivariate: whether to use multivariate or univariate dataset. Default is False (univariate).
+        save: whether to save the created datasets to disk. Default is True.
     
     Returns:
-        train_loader, valid_loader, test_loader: DataLoader objects
+        train_dataset, test_dataset: Custom Dataset objects
     """
     if save:
         path_train = config.DIR_PREPROCESSED_DATA / f"dataset_vae_train.pt"
@@ -158,8 +182,6 @@ def create_datasets(
             print(f"Saved dataset to {path_test}")
     
     return train_dataset, test_dataset
-
-
 
 
 

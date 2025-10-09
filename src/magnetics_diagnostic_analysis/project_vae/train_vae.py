@@ -6,11 +6,10 @@ from sklearn.neighbors import KernelDensity, KNeighborsClassifier
 from sklearn.cluster import DBSCAN
 
 from tqdm import tqdm
-from pathlib import Path
 import gc
 
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
-from magnetics_diagnostic_analysis.project_vae.model.vae import LSTMBetaVAE
+from magnetics_diagnostic_analysis.project_vae.model.lstm_vae import LSTMBetaVAE
 from magnetics_diagnostic_analysis.ml_tools.metrics import vae_loss_function, vae_reconstruction_error
 from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping, LRScheduling, GradientClipping, DropOutScheduling
 from magnetics_diagnostic_analysis.ml_tools.preprocessing import normalize_batch, denormalize_batch
@@ -18,8 +17,17 @@ from magnetics_diagnostic_analysis.project_vae.utils.dataset_building import Mul
 from magnetics_diagnostic_analysis.project_vae.utils.plot_training import plot_history, plot_density_and_threshold, plot_projected_latent_space, plot_random_reconstructions
 
 
-def pad_sequences_smartly(batch):
-    """Custom collate function to pad sequences to max length in batch"""
+def pad_sequences_smartly(batch: list[tuple[np.ndarray, int]]) -> tuple[torch.Tensor]:
+    """
+    Custom collate function to pad sequences to max length in batch. Thus, each batch can have different lengths.
+    
+    Args:
+        batch (list): List of tuples (sequence, length)
+
+    Returns:
+        padded_sequences (torch.Tensor): Padded sequences tensor of shape (batch_size, max_seq_len, num_features)
+        lengths (torch.Tensor): Original lengths of each sequence in the batch
+    """
     sequences, lengths = zip(*batch)
 
     # Sort in descending order (mandatory for Truncated BPTT)
@@ -38,7 +46,29 @@ def pad_sequences_smartly(batch):
 
 
 
-def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, device, verbose):
+def train_one_vae(model: torch.nn.Module, 
+                  optimizer: torch.optim.Optimizer, 
+                  loader: DataLoader, 
+                  full_loader: DataLoader, 
+                  n_epochs_per_iter: int, 
+                  device: torch.device, 
+                  verbose: bool = False) -> tuple[list, np.ndarray]:
+    """
+    Train a VAE model for one iteration and evaluate reconstruction errors on the full dataset.
+
+    Args:
+        model (torch.nn.Module): VAE model to train
+        optimizer (torch.optim.Optimizer): Optimizer for training
+        loader (DataLoader): DataLoader for training data
+        full_loader (DataLoader): DataLoader for full dataset evaluation
+        n_epochs_per_iter (int): Number of epochs to train
+        device (torch.device): Device to use for training
+        verbose (bool): Whether to print training progress
+
+    Returns:
+        history (list): List of training losses per batch
+        reconstruction_errors (np.ndarray): Reconstruction errors for the full dataset
+    """
     # Setting callbacks
     early_stopper = EarlyStopping(min_delta=0.01, patience=10)
     lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.66, patience=3, min_lr=1e-6, min_delta=0.001)
@@ -93,21 +123,31 @@ def train_one_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, devi
 
     reconstruction_errors = torch.cat(reconstruction_errors).numpy()
 
-
     return history, reconstruction_errors
 
 
-def find_threshold_kde(scores, alpha=0.05):
+def find_threshold_kde(scores: np.ndarray, alpha: float = 0.05) -> tuple[float, np.ndarray]:
+    """
+    Apply the KDE method to find a threshold for outlier detection.
+
+    Args:
+        scores (np.ndarray): The input scores to analyze.
+        alpha (float): The significance level for thresholding.
+
+    Returns:
+        tuple[float, np.ndarray]: The threshold value and the density values.
+    """
     kde = KernelDensity(kernel='gaussian', bandwidth='scott')
     kde.fit(scores.reshape(-1, 1))
 
-    # Method 1: Based on gradient of density 
+    ### ---- Method 1: Based on gradient of density ---- ###
     # x = np.linspace(np.min(scores), np.max(scores), 1000)
     # log_dens = kde.score_samples(x.reshape(-1, 1))
     # density = np.exp(log_dens)
     # gradient = np.gradient(density)
     # inflection_point = x[np.argmin(gradient)]
-    # Method 2: Percentile of density
+
+    ### -------- Method 2: Percentile of density ------- ###
     density_values = np.exp(kde.score_samples(scores.reshape(-1, 1)))
     threshold_density = np.percentile(density_values, alpha * 100)
 
@@ -115,7 +155,18 @@ def find_threshold_kde(scores, alpha=0.05):
     del kde
     return threshold, density_values
 
-def detect_outliers_kde(scores, alpha=0.05):
+
+def detect_outliers_kde(scores: np.ndarray, alpha: float = 0.05) -> tuple[np.ndarray, float, np.ndarray]:
+    """
+    Detect outliers in the scores using a threshold-based Kernel Density Estimation (KDE).
+
+    Args:
+        scores (np.ndarray): The input scores to analyze.
+        alpha (float): The significance level for outlier detection.
+
+    Returns:
+        tuple[np.ndarray, float, np.ndarray]: A tuple containing the outlier indices, the threshold, and the density values.
+    """
     threshold, density_values = find_threshold_kde(scores, alpha)
     outlier_mask = scores > threshold
     outlier_indices = np.where(outlier_mask)[0]
@@ -124,7 +175,15 @@ def detect_outliers_kde(scores, alpha=0.05):
 
 
 def pad_results(x_couples: list) -> list:
-    """Pad results to the max length in the list"""
+    """
+    Pad results to the max length in the list
+
+    Args:
+        x_couples (list): List of numpy arrays to pad
+
+    Returns:
+        list: List of padded numpy arrays
+    """
     max_length = max([x.shape[2] for x in x_couples])
     padded_results = []
     for x in x_couples:
@@ -140,7 +199,13 @@ def pad_results(x_couples: list) -> list:
     return padded_results
 
 
-def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, device, verbose):
+def train_final_vae(model: torch.nn.Module, 
+                    optimizer: torch.optim.Optimizer, 
+                    loader: DataLoader, 
+                    full_loader: DataLoader, 
+                    n_epochs_per_iter: int, 
+                    device: torch.device, 
+                    verbose: bool = False) -> tuple[list, np.ndarray, np.ndarray]:
     # Setting callbacks
     early_stopper = EarlyStopping(min_delta=0.01, patience=10)
     lr_scheduler = LRScheduling(optimizer, mode='min', factor=0.66, patience=3, min_lr=1e-6, min_delta=0.001)
@@ -203,7 +268,24 @@ def train_final_vae(model, optimizer, loader, full_loader, n_epochs_per_iter, de
     print("Latent features extracted for final VAE")
     return history, reconstruction_couples, latent_features
 
-def find_cluster_and_classify(latent_features, dbscan_eps, dbscan_min_samples, knn_n_neighbors):
+
+def find_cluster_and_classify(latent_features: np.ndarray, dbscan_eps: float, dbscan_min_samples: int, knn_n_neighbors: int) -> tuple[KNeighborsClassifier, np.ndarray, np.ndarray]:
+    """
+    1. Clusterize the latent features with DBSCAN.
+    2. Train a KNN classifier to classify inlier vs outlier based on the DBSCAN clustering.
+
+    Args:
+        latent_features (np.ndarray): The latent features to cluster and classify.
+        dbscan_eps (float): The epsilon parameter for DBSCAN.
+        dbscan_min_samples (int): The minimum samples parameter for DBSCAN.
+        knn_n_neighbors (int): The number of neighbors for KNN.
+
+    Returns:
+        tuple[KNeighborsClassifier, np.ndarray, np.ndarray]:
+            - The trained KNN classifier
+            - The DBSCAN cluster labels
+            - The DBSCAN outlier mask
+    """
     dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
     clusters = dbscan.fit_predict(latent_features)
     outlier_mask = clusters == -1
@@ -230,7 +312,32 @@ def train_iterative_vae_pipeline(
     knn_n_neighbors: int = 5,
     device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ) -> dict:
-    
+    """
+    Train an iterative VAE pipeline with outlier detection and classification.
+
+    Args:
+        train_dataset (Dataset): The training dataset.
+        n_iterations (int): Number of training iterations.  Default is 5.
+        n_epochs_per_iter (int): Number of epochs per iteration. Default is 50.
+        batch_size (int): Batch size for training. Default is 32.
+        lstm_bptt_steps (int): Number of BPTT steps for LSTM. Default is None (no truncation).
+        kde_percentile_rate (float): Percentile rate for KDE thresholding. Default is 0.05.
+        dbscan_eps (float): Epsilon parameter for DBSCAN. Default is 0.5.
+        dbscan_min_samples (int): Minimum samples parameter for DBSCAN. Default is 5.
+        knn_n_neighbors (int): Number of neighbors for KNN. Default is 5.
+        device (torch.device): Device to use for training. Default is CUDA if available.
+
+    Returns:
+        dict: A dictionary containing:
+            - the final VAE model,
+            - list of VAE models per iteration,
+            - KNN classifier,
+            - anomaly indices,
+            - latent features,
+            - DBSCAN clusters,
+            - outlier mask.
+    """
+
     # Model parameters
     sample_data, _ = train_dataset[0]
     print("Sample data shape:", sample_data.shape)

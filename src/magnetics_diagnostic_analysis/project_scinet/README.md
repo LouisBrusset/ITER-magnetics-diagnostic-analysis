@@ -11,9 +11,10 @@ Scinet is inspired of this paper: [Discover physical concepts and equations with
 3. [Utilisation](#-utilisation)
 4. [Configuration Parameters](#-configuration-parameters)
 
-## 📁 Files
+## Files
 
 ### Main Files
+- **`__init__.py`** - Prepare importation for future utilisation
 - **`setting_scinet.py`** - Configuration and settings for SciNet
 - **`train_scinet.py`** - Training function for SCINet model (dataset need to be ready at this point)
 
@@ -29,7 +30,7 @@ Scinet is inspired of this paper: [Discover physical concepts and equations with
 ### Checkpoints
 - **`checkpoints/`** - Saved model checkpoints and weights during training in case of failure>
 
-## 🔬 SCINet Overview - Architecture
+## SCINet Overview - Architecture
 
 SCINet is a neural network designed for recovery of the physical parameter based only on observation>
 - Looks like an Auto-Encoder
@@ -41,7 +42,7 @@ Note that:
 - There are no physical preconceptions: the Auto-Encoder only works with observation.
 - The KL divergence in the latent space force the latent variable to be independant one from another: what we want for a physical parameter.
 
-## 🔧 Utilisation
+## Utilisation
 
 ### Synthetic data creation: damped pendulum case
 ```bash
@@ -79,7 +80,7 @@ python utils/plot_latent_activations.py
 uv run utils/plot_latent_activations.py
 ```
 
-## ⚙️ Configuration Parameters
+## Configuration Parameters
 
 All parameters are stored in the file `setting_scinet.py`.
 

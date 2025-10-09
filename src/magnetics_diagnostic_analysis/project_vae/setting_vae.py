@@ -19,6 +19,8 @@ class Config:
     DIR_PROCESSED_DATA = DIR_DATA / f"processed/{SUFFIX}"
     DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
     DIR_FIGURES = Path(__file__).absolute().parent.parent.parent.parent / f"results/figures/{SUFFIX}"
+    for direction in [DIR_DATA, DIR_RAW_DATA, DIR_PREPROCESSED_DATA, DIR_PROCESSED_DATA, DIR_MODEL_PARAMS, DIR_FIGURES]:
+        direction.mkdir(parents=True, exist_ok=True)
 
     ### PyTorch device
     DEVICE = select_torch_device(temporal_dim="sequential")

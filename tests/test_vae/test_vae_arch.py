@@ -3,7 +3,7 @@ import pytest
 import gc
 
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
-from magnetics_diagnostic_analysis.project_vae.model.vae import LengthAwareLSTMEncoder, LengthAwareLSTMDecoder, LSTMBetaVAE
+from magnetics_diagnostic_analysis.project_vae.model.lstm_vae import LengthAwareLSTMEncoder, LengthAwareLSTMDecoder, LSTMBetaVAE
 from magnetics_diagnostic_analysis.ml_tools.metrics import vae_loss_function
 
 
