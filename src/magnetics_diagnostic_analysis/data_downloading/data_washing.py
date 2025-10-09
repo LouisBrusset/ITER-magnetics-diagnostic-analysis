@@ -4,6 +4,7 @@ import pandas as pd
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
 
+
 def print_dataset_info(ds: xr.Dataset) -> None:
     """
     Print information about the dataset including variable names, shapes, dimensions, and NaN counts.
@@ -51,6 +52,7 @@ def filter_xr_dataset_channels(data_train: xr.Dataset, var_channel_df: pd.DataFr
     final["shot_index"] = data_train["shot_index"]
 
     return final
+
 
 def impute_to_zero(data: xr.Dataset) -> xr.Dataset:
     """

@@ -3,7 +3,6 @@ import xarray as xr
 from scipy import signal
 
 
-
 def _keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     """
     Keep only the largest connected True component in a boolean mask.
@@ -36,6 +35,7 @@ def _keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     
     return new_mask
 
+
 def _filter_low_current_regions(ip: np.ndarray, mask: np.ndarray, min_current: float = 4.e4) -> np.ndarray:
     """
     Remove True values from mask where the current is below a threshold.
@@ -51,6 +51,7 @@ def _filter_low_current_regions(ip: np.ndarray, mask: np.ndarray, min_current: f
     new_mask = mask.copy()
     new_mask[np.abs(ip) < min_current] = False
     return new_mask
+
 
 def ip_filter(ip: np.ndarray, filter: str = 'default', min_current: float = None) -> np.ndarray:
     """

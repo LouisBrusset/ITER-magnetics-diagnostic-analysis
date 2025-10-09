@@ -99,9 +99,7 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
     Returns:
         xr.Dataset: An xarray Dataset containing the requested diagnostic data.
     """
-
     dataset = []
-
     for shot in tqdm.tqdm(shots, desc="Loading shots", total=len(shots)):
         try:
             summary = retry_to_dask(shot, "summary")
@@ -186,7 +184,6 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
     return final
 
 
-
 def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
     """
     Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
@@ -200,9 +197,7 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_sta
     Returns:
         xr.Dataset: An xarray Dataset containing the requested diagnostic data.
     """
-    
     dataset = []
-
     for shot_index, shot_id in tqdm.tqdm(enumerate(shots), desc="Loading shots", total=len(shots)):
         try:
             ref = retry_to_dask(shot_id, "summary")
@@ -266,6 +261,11 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_sta
 
 def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], steady_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
     """
+    Warning: This function is deprecated and will be removed in future versions. 
+             It was for directly loading train and test datasets. But we now split later in the workflow.
+    Use `load_data` instead.
+    ==============
+
     Load data from cache or build it if not available.
 
     Args:
@@ -342,7 +342,6 @@ def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: 
         # rng.shuffle(shots)
         pass
         
-        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, steady_state=steady_state) for mode, shot_ids in split_ids.items()}
         dataset = build_level_2_data_all_shots(
             shots, 
             groups=groups, 

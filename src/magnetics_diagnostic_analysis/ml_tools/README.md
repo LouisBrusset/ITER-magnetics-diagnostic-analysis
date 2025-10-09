@@ -1,177 +1,163 @@
 # ML Tools Module
 
-This module contains machine learning utilities and tools for training deep learning models on magnetics diagnostic data.
+This module contains universal and reusable machine learning utilities designed for training and evaluating deep learning models on magnetics diagnostic data.
 
 ## Table of Contents
 
-1. [Files](#-files)
-2. [Core Components](#-core-components)
-   - [Training Callbacks](#training-callbacks)
-   - [Metrics](#metrics)
-   - [Preprocessing](#preprocessing)
-   - [Device Selection](#device-selection)
-   - [Other Utilities](#other-utilities)
-3. [Usage Examples](#-usage-examples)
-4. [Key Features](#-key-features)
-5. [Best Practices](#-best-practices)
+1. [Presentation and Universality Philosophy](#presentation-and-universality-philosophy)
+2. [File Enumeration and Purpose](#file-enumeration-and-purpose)
+3. [Functions by File](#functions-by-file)
+   - [train_callbacks.py](#-train_callbackspy)
+   - [metrics.py](#-metricspy)
+   - [preprocessing.py](#-preprocessingpy)
+   - [projection_2d.py](#-projection_2dpy)
+   - [pytorch_device_selection.py](#-pytorch_device_selectionpy)
+   - [random_seed.py](#-random_seedpy)
+   - [show_model_parameters.py](#-show_model_parameterspy)
 
-## 📁 Files
+## Presentation and Universality Philosophy
 
-- **`train_callbacks.py`** - Training callbacks including early stopping
-- **`metrics.py`** - Evaluation metrics for model performance
-- **`preprocessing.py`** - Data preprocessing utilities
-- **`projection_2d.py`** - 2D projection methods for visualization
-- **`pytorch_device_selection.py`** - PyTorch device selection utilities
-- **`random_seed.py`** - Random seed management for reproducibility
-- **`show_model_parameters.py`** - Model parameter inspection tools
+This module was designed with a philosophy of **universality** and **reusability**. The objective is to provide generic tools that can be used:
 
-## 🔧 Core Components
+- **Across Projects**: Compatible with all package projects (MSCRED, VAE, SCINet)
+- **Framework Agnostic**: Primarily PyTorch-oriented but extensible
+- **Model Independent**: Generic functions not tied to specific architectures
+- **Research Ready**: Essential tools for experimentation and rapid prototyping
 
-### Training Callbacks
-Training utilities including early stopping and other callback functions.
+These utilities are designed to be **plug-and-play**: you import what you need without complex dependencies.
 
-```python
-from magnetics_diagnostic_analysis.ml_tools import train_callbacks
+## File Enumeration and Purpose
 
-# Example usage for training callbacks
-callback = train_callbacks.EarlyStopping(patience=10, min_delta=0.001)
-```
+### 📋 **`train_callbacks.py`**
+Training callbacks to control and optimize the learning process
+- Early stopping, learning rate scheduling, gradient clipping
+- Classes to automate training best practices
 
-### Metrics
-Evaluation metrics for assessing model performance.
+### 📊 **`metrics.py`** 
+Loss functions and evaluation metrics specific to models
+- Loss functions for MSCRED, VAE, SCINet
+- Anomaly scores and reconstruction metrics
 
-```python
-from magnetics_diagnostic_analysis.ml_tools import metrics
+### 🔧 **`preprocessing.py`**
+Data preprocessing utilities
+- Batch normalization/denormalization
+- Standard transformations for data preparation
 
-# Calculate evaluation metrics
-score = metrics.calculate_metric(predictions, targets)
-```
+### 📍 **`projection_2d.py`**
+Projection methods and visualization for high-dimensional spaces
+- t-SNE, UMAP for visualizing latent spaces
+- Plotting utilities for exploratory analysis
 
-### Preprocessing
-Data preprocessing functions for machine learning pipelines.
+### 💻 **`pytorch_device_selection.py`**
+Intelligent PyTorch device management (CPU/GPU/MPS)
+- Automatic selection of best available device
+- PyTorch system information
 
-```python
-from magnetics_diagnostic_analysis.ml_tools import preprocessing
+### 🎲 **`random_seed.py`**
+Experiment reproducibility management
+- Universal seeding for reproducible results
+- Compatible with numpy, torch, random
 
-# Preprocess data for ML models
-processed_data = preprocessing.preprocess(raw_data)
-```
+### 🔍 **`show_model_parameters.py`**
+Model inspection and debugging
+- Detailed display of model parameters
+- Architecture diagnostic tools
 
-### Device Selection
-PyTorch device selection and management.
+## Functions by File
 
-```python
-from magnetics_diagnostic_analysis.ml_tools import pytorch_device_selection
+### 📋 `train_callbacks.py`
 
-# Select appropriate device (CPU/GPU)
-device = pytorch_device_selection.get_device()
-```
+#### `class EarlyStopping`
+Early training termination to prevent overfitting
+- **`__init__(min_delta, patience)`**: Threshold configuration
+- **`check_stop(current_loss, model)`**: Checks if training should stop
+- **`restore_best_weights(model)`**: Restores best weights
 
-### Other Utilities
+#### `class LRScheduling` 
+Learning rate scheduling during training
+- **`__init__(optimizer, factor, patience)`**: Scheduler configuration
+- **`step(metric)`**: Updates learning rate
 
-- **2D Projections**: Visualization utilities for high-dimensional data
-- **Random Seed**: Reproducibility tools for consistent results
-- **Model Parameters**: Tools for inspecting model architecture and parameters
-    val_loss = validate_model()
-    
-    # Check if should stop
-    if early_stop.check_stop(val_loss, model):
-        print(f"Early stopping at epoch {epoch}")
-        break
-```
+#### `class GradientClipping`
+Gradient clipping to stabilize training
+- **`__init__(max_norm)`**: Defines maximum norm
+- **`clip(model)`**: Applies clipping
 
-##### `restore_best_weights(model) -> None`
-Restore the model weights from the best epoch.
+#### `class DropOutScheduling`
+Dynamic dropout scheduling
+- **`__init__(model, initial_rate, decay)`**: Dropout configuration
+- **`update_dropout(epoch)`**: Updates dropout rates
 
-```python
-# After training, restore best weights
-early_stop.restore_best_weights(model)
-```
+#### `class EMA` 
+Exponential Moving Average of model weights
+- **`__init__(model, decay)`**: Initializes EMA
+- **`update(model)`**: Updates moving averages
 
-## 🚀 Usage Examples
+### 📊 `metrics.py`
 
-### Basic Usage
-```python
-from magnetics_diagnostic_analysis.ml_tools import EarlyStopping
-import torch
+#### `mscred_loss_function(reconstructed, original)`
+MSCRED-specific loss function based on reconstruction error
 
-# Initialize early stopping
-early_stop = EarlyStopping(min_delta=0.001, patience=5)
+#### `mscred_anomaly_score(reconstructed_valid, original)`
+Calculates anomaly scores for MSCRED by comparing reconstructions and originals
 
-# Training loop
-model = YourModel()
-optimizer = torch.optim.Adam(model.parameters())
+#### `vae_loss_function(reconstructed, original, mu, logvar, beta)`
+Complete VAE loss function: reconstruction + KL divergence with β coefficient
 
-for epoch in range(100):
-    # Training step
-    model.train()
-    train_loss = 0.0
-    for batch in train_loader:
-        optimizer.zero_grad()
-        outputs = model(batch)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-    
-    # Validation step
-    model.eval()
-    val_loss = validate(model, val_loader)
-    
-    print(f"Epoch {epoch}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
-    
-    # Check early stopping
-    if early_stop.check_stop(val_loss, model):
-        print(f"Early stopping triggered at epoch {epoch}")
-        break
+#### `vae_reconstruction_error(reconstructed, original, lengths)`
+Reconstruction error for VAE with variable length handling
 
-# Restore best model weights
-early_stop.restore_best_weights(model)
-```
+#### `scinet_loss(prediction, target, mu, logvar, kld_beta)`
+Loss function for SCINet combining prediction and KL regularization
 
-### Advanced Configuration
-```python
-# More sensitive early stopping
-sensitive_early_stop = EarlyStopping(min_delta=0.0001, patience=15)
+### 🔧 `preprocessing.py`
 
-# Less sensitive early stopping (for noisy loss curves)
-robust_early_stop = EarlyStopping(min_delta=0.01, patience=3)
-```
+#### `normalize_batch(batch)`
+Normalizes a data batch between 0 and 1
+- **Input**: Tensor of shape (batch_size, ...)
+- **Output**: Normalized tensor + min/max values for denormalization
 
-## 🎯 Key Features
+#### `denormalize_batch(normalized_batch, min_vals, max_vals)`
+Inverse of normalization to recover original values
 
-- **Automatic best model saving**: Keeps track of the best model weights
-- **Configurable sensitivity**: Adjust `min_delta` and `patience` for your use case
-- **PyTorch compatible**: Works with any PyTorch model
-- **Memory efficient**: Only stores the best model state
+### 📍 `projection_2d.py`
 
-## 📊 Integration with MSCRED/VAE
+#### `project_tsne(embedding, perplexity, n_iter, random_state)`
+t-SNE projection for visualizing high-dimensional embeddings
+- **embedding**: Data to project (n_samples, n_features)
+- **Returns**: 2D projection + t-SNE model
 
-This early stopping utility is designed to work seamlessly with the anomaly detection models:
+#### `project_umap(embedding, n_neighbors, min_dist, random_state)`
+UMAP projection better suited for large data
+- Configurable parameters to control local/global structure
 
-```python
-# For MSCRED training
-from magnetics_diagnostic_analysis.ml_tools import EarlyStopping
+#### `apply_umap(model, new_embedding)`
+Applies a pre-trained UMAP model to new data
 
-early_stop = EarlyStopping(min_delta=0.001, patience=10)
-# Use in MSCRED training loop
+#### `plot_projection(projection, labels, title, save_path)`
+Visualizes 2D projections with label-based coloring
 
-# For VAE training
-early_stop_vae = EarlyStopping(min_delta=0.0005, patience=15)
-# Use in VAE training loop
-```
+### 💻 `pytorch_device_selection.py`
 
-## 🔧 Customization
+#### `print_torch_info()`
+Displays PyTorch system information: version, CUDA, available devices
 
-The early stopping implementation can be extended for more complex scenarios:
+#### `select_torch_device(temporal_dim)`
+Intelligent selection of optimal device
+- **temporal_dim**: "sequential" or "parallel" to optimize based on model type (time aware models must be trained on one unique CUDA gpu)
+- **Returns**: Optimal torch.device (cuda/mps/cpu)
 
-- **Multiple metrics monitoring**: Modify to track validation accuracy, F1-score, etc.
-- **Learning rate scheduling**: Integrate with learning rate schedulers
-- **Model checkpointing**: Save complete model checkpoints at best epochs
+### 🎲 `random_seed.py`
 
-## 💡 Best Practices
+#### `seed_everything(seed)`
+Universal seeding for complete reproducibility
+- Configures numpy, torch, random, and torch.backends.cudnn
+- **seed**: Seed for reproducibility (default: 42)
 
-- **Start with default values**: `min_delta=0.001, patience=5`
-- **Adjust patience for dataset size**: Larger datasets may need higher patience
-- **Monitor validation loss**: Use validation set, not training loss
-- **Save early**: Call `restore_best_weights()` after training completes
+### 🔍 `show_model_parameters.py`
+
+#### `print_model_parameters(model, model_name)`
+Detailed display of model architecture and parameters
+- Total parameters, trainable parameters
+- Layer-by-layer breakdown for debugging
+

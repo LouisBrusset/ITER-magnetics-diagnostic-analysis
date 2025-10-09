@@ -227,6 +227,21 @@ class DropOutScheduling:
 
 
 class EMA:
+    """
+    Exponential Moving Average (EMA) for model weights.
+
+    Methods:
+    on_batch_end() -> None:
+        Update the EMA weights after each batch.
+        The formula used is: shadow = decay * shadow + (1 - decay) * param.data
+        To be called at the end of each training batch / epoch.
+    apply_shadow() -> None:
+        Apply the EMA weights to the model.
+        To be used for evaluation after training.
+    restore() -> None:
+        Restore the original model weights.
+        To be used after evaluation with EMA weights.
+    """
     def __init__(self, model, decay: float = 0.999):
         self.model = model
         self.decay = decay

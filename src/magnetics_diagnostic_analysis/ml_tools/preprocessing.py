@@ -2,6 +2,10 @@ import torch
 
 # For tensor of size (batch, time_steps, n_features)
 def normalize_batch(batch):
+    """
+    Use a min-max normalization to scale each feature to the range [-1, 1] across time_steps.
+    This is done independently for each sample in the batch.
+    """
     # Compute min and max for each feature across time_steps
     min_vals = batch.amin(dim=(1), keepdim=True)
     max_vals = batch.amax(dim=(1), keepdim=True)
@@ -12,6 +16,10 @@ def normalize_batch(batch):
     return normalized_batch, min_vals, max_vals
 
 def denormalize_batch(normalized_batch, min_vals, max_vals):
+    """
+    Reverse the min-max normalization to get back to the original scale.
+    It uses the stored min and max values for each feature, computed during normalization.
+    """
     ranges = max_vals - min_vals
     ranges[ranges == 0] = 1.0
     # Reverse the normalization: [-1, 1] -> original scale
