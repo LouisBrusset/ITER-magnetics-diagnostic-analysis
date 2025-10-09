@@ -2,217 +2,114 @@
 
 Multi-Scale Convolutional Recurrent Encoder-Decoder (MSCRED) implementation for anomaly detection in magnetics diagnostic data.
 
+MSCRED is inspired by the paper: [A Deep Neural Network for Unsupervised Anomaly Detection and Diagnosis in Multivariate Time Series Data](https://arxiv.org/abs/1811.08055)
+
 ## Table of Contents
 
-1. [Files](#-files)
-2. [MSCRED Overview](#-mscred-overview)
-3. [Core Components](#-core-components)
-4. [Usage Example](#-usage-example)
-5. [Model Architecture](#-model-architecture)
-6. [Training and Evaluation](#-training-and-evaluation)
-7. [Configuration Parameters](#-configuration-parameters)
-8. [Best Practices](#-best-practices)
+1. [Files](#files)
+2. [MSCRED Overview - Architecture](#mscred-overview---architecture)
+3. [Utilisation](#utilisation)
+4. [Configuration Parameters](#configuration-parameters)
 
-## 📁 Files
+## Files
 
 ### Main Files
+- **`__init__.py`** - Prepare importation for future utilisation
 - **`setting_mscred.py`** - Configuration and settings for MSCRED
-- **`train_mscred.py`** - Training pipeline for MSCRED model
+- **`train_mscred.py`** - Training and evaluation pipeline for MSCRED model
 
 ### Model Architecture
-- **`model/mscred.py`** - MSCRED neural network implementation
-- **`model/convlstm.py`** - ConvLSTM components for MSCRED
+- **`model/mscred.py`** - MSCRED neural network implementation with encoder-decoder architecture
+- **`model/convlstm.py`** - ConvLSTM components for temporal modeling
 
 ### Utilities
 - **`utils/matrix_generator.py`** - Signature matrix generation for multivariate time series
-- **`utils/dataloader_building.py`** - Data loading and batching utilities
+- **`utils/dataloader_building.py`** - Custom dataset construction and preprocessing
 - **`utils/window_building.py`** - Time series windowing functions
 - **`utils/evaluation_mscred.py`** - Model evaluation and testing functions
-- **`utils/mast_data_scraping.py`** - MAST data processing utilities
+- **`utils/mast_data_scraping.py`** - MAST data downloading from the API. More infomation in `src/magnetics_diagnostic_analysis/data-downloading/`
 - **`utils/synthetic_anomaly_adding.py`** - Synthetic anomaly injection for testing
 - **`utils/synthetic_data_creation.py`** - Synthetic data generation utilities
 
 ### Checkpoints
-- **`checkpoints/`** - Saved model checkpoints and weights
+- **`checkpoints/`** - Saved model checkpoints and weights during training
 
-## 🔬 MSCRED Overview
+## MSCRED Overview - Architecture
 
-MSCRED is a deep neural network designed for multivariate time-series anomaly detection that:
-- Captures temporal correlations in multivariate time series
-- Generates signature matrices to represent time series relationships
-- Uses multi-scale convolution for feature extraction
-- Employs encoder-decoder architecture for reconstruction-based anomaly detection
+MSCRED (Multi-Scale Convolutional Recurrent Encoder-Decoder) is a deep neural network designed for multivariate time-series anomaly detection that:
 
-## 🔧 Core Components
+- **Multi-Scale Analysis**: Captures temporal patterns at different time scales through multiple window sizes
+- **Signature Matrices**: Converts multivariate time series into signature matrices that represent relationships between variables
+- **CNN Encoder**: Uses convolutional layers to extract spatial features from signature matrices
+- **ConvLSTM**: Employs Convolutional LSTM with an Attention mechanism to capture temporal dependencies while preserving spatial structure
+- **CNN Decoder**: Reconstructs signature matrices for anomaly detection based on reconstruction error
+- **Attention Mechanism**: Incorporates attention to focus on relevant temporal segments
 
-### Model Training
-```python
-from magnetics_diagnostic_analysis.project_mscred import train_mscred
+The workflow is:
+1. Convert multivariate time series into signature matrices at multiple scales
+2. Use CNN encoder to extract spatial features
+3. Apply ConvLSTM to model temporal dependencies
+4. Reconstruct using CNN decoder
+5. Detect anomalies based on reconstruction error
 
-# Train MSCRED model
-train_mscred.main()
+## Utilisation
+
+### Data downloading
+
+See the `src/magnetics_diagnostic_analysis/data_downloading/` module and its `README.md` file to understand the functions we use here.
+
+To download true tokamak data, run this:
+```bash
+cd src/magnetics_diagnostic_analysis/project_mscred/
+# If using python .env
+python utils/mast_data_scraping.py
+# If using uv .venv
+uv run utils/mast_data_scraping.py
 ```
 
-### Configuration
-```python
-from magnetics_diagnostic_analysis.project_mscred import setting_mscred
-
-# Load MSCRED settings
-config = setting_mscred.load_config()
+To create synthetic multivariate signals, run that:
+```bash
+cd src/magnetics_diagnostic_analysis/project_mscred/
+# If using python .env
+python utils/synthetic_data_creation.py
+# If using uv .venv
+uv run utils/synthetic_data_creation.py
 ```
 
-### Signature Matrix Generation
-```python
-from magnetics_diagnostic_analysis.project_mscred.utils import matrix_generator
-
-# Generate signature matrices for correlation analysis
-signature_matrix = matrix_generator.generate_signature_matrix()
+### Data preprocessing, Channel selection, Anomaly adding, Window building
+```bash
+cd src/magnetics_diagnostic_analysis/project_mscred/
+# If using python .env
+python utils/window_building.py
+# If using uv .venv
+uv run utils/window_building.py
 ```
 
-# Generate formatted data for MSCRED training
-train_data, test_data = generate_train_test_data()
+### Dataloader creatin and training
+```bash
+cd src/magnetics_diagnostic_analysis/project_mscred/
+# If using python .env
+python train_mscrd.py
+# If using uv .venv
+uv run train_mscrd.py
 ```
 
-## 📊 Signature Matrix Generation
-
-The signature matrix is a key component that captures:
-
-### Correlation Measures
-- **Pearson correlation**: Linear relationships between variables
-- **Cosine similarity**: Angular similarity between time series
-- **Custom metrics**: Domain-specific relationship measures
-
-### Implementation Details
-```python
-# Example signature matrix generation workflow
-import numpy as np
-from scipy.stats import pearsonr
-from scipy import spatial
-
-# Calculate correlations between all variable pairs
-def compute_signature_matrix(data):
-    n_vars = data.shape[1]
-    signature_matrix = np.zeros((n_vars, n_vars))
-    
-    for i in range(n_vars):
-        for j in range(n_vars):
-            if i == j:
-                signature_matrix[i, j] = 1.0
-            else:
-                corr, _ = pearsonr(data[:, i], data[:, j])
-                signature_matrix[i, j] = abs(corr)
-    
-    return signature_matrix
+### Evaluation and testing
+```bash
+cd src/magnetics_diagnostic_analysis/project_mscred/
+# If using python .env
+python utils/evaluation_mscred.py
+# If using uv .venv
+uv run utils/evaluation_mscred.py
 ```
 
-## 🚀 Usage Example
+## Configuration Parameters
 
-### Basic MSCRED Workflow
-```python
-from magnetics_diagnostic_analysis.project_mscred import (
-    generate_signature_matrix_node,
-    generate_train_test_data
-)
+All parameters are stored in the file `setting_mscred.py`.
 
-# 1. Load your magnetics data
-data = load_magnetics_data()
-
-# 2. Generate signature matrices
-signature_matrices = generate_signature_matrix_node()
-
-# 3. Prepare training data
-train_data, test_data = generate_train_test_data()
-
-# 4. Train MSCRED model (implementation in notebook)
-# model = train_mscred_model(train_data, signature_matrices)
-
-# 5. Detect anomalies
-# anomalies = detect_anomalies(model, test_data)
-```
-
-## 📈 Development Notebook
-
-The `test_grandes_lignes.ipynb` notebook contains:
-
-### 1. Synthetic Data Generation
-```python
-def generate_multivariate_ts(n_variables, n_timesteps, noise_level=0.1, seed=None):
-    """
-    Generate realistic multivariate time series with temporal continuity.
-    
-    Features:
-    - AR(1) processes for temporal continuity
-    - Unique parameters per variable (means, volatilities, trends)
-    - Sinusoidal components with different frequencies
-    - Configurable noise levels
-    """
-```
-
-### 2. MSCRED Architecture
-- **Encoder**: Multi-scale convolutional layers
-- **Decoder**: Reconstruction layers
-- **Attention mechanisms**: For focusing on important features
-- **Loss functions**: Reconstruction + regularization terms
-
-### 3. Training Pipeline
-- Data preprocessing and normalization
-- Signature matrix computation
-- Model training with early stopping
-- Anomaly score computation
-
-## 🎯 Anomaly Detection Strategy
-
-### Normal Behavior Learning
-1. **Training Phase**: Learn to reconstruct normal magnetics patterns
-2. **Signature Learning**: Capture variable relationships during normal operation
-3. **Multi-scale Analysis**: Different temporal scales for comprehensive analysis
-
-### Anomaly Detection
-1. **Reconstruction Error**: High error indicates anomalous behavior
-2. **Signature Deviation**: Changes in variable relationships
-3. **Threshold Setting**: Statistical or learned thresholds for classification
-
-## 🔧 Configuration Parameters
-
-### Model Architecture
-- **Input dimensions**: Based on number of magnetics channels
-- **Convolution scales**: Multiple scales for temporal analysis
-- **Encoder depth**: Number of encoding layers
-- **Latent dimension**: Compressed representation size
-
-### Training Parameters
-- **Learning rate**: Adaptive or fixed
-- **Batch size**: Depends on sequence length and memory
-- **Epochs**: With early stopping
-- **Regularization**: L1/L2, dropout rates
-
-## 📊 Integration with Magnetics Data
-
-### Data Preprocessing
-```python
-# Typical preprocessing pipeline
-def preprocess_magnetics_data(raw_data):
-    # 1. Permanent state filtering
-    filtered_data = apply_permanent_state_filter(raw_data)
-    
-    # 2. Normalization
-    normalized_data = normalize_time_series(filtered_data)
-    
-    # 3. Sequence creation
-    sequences = create_sequences(normalized_data, sequence_length=100)
-    
-    return sequences
-```
-
-### Variable Selection
-- Focus on high-quality magnetics channels
-- Include EFIT reconstructions for context
-- Filter based on data completeness
-
-## 💡 Best Practices
-
-- **Data Quality**: Ensure good data quality before training
-- **Sequence Length**: Balance between context and computational efficiency
-- **Validation Strategy**: Use temporal splits (not random) for time series
-- **Threshold Tuning**: Use validation set for threshold optimization
-- **Interpretability**: Analyze which variables contribute most to anomaly scores
+Key parameters for MSCRED:
+- **STEADY_STATE**: Whether the data downloading select only the steady state in the plasma or else the full shot
+- **DATA_SHAPE**: Shape of the signature matrices (channels, height, width)
+- **WINDOW_SIZES**: Multiple window sizes for multi-scale analysis, e.g.: [10, 30, 60]
+- **GAP_TIME**: Step size to calculate the next window for temporal modeling
+- **FIRST_LEARNING_RATE**: Initial learning rate for stable training

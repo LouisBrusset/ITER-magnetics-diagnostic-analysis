@@ -4,19 +4,19 @@ import matplotlib.pyplot as plt
 def create_anomalies(data, start_index=15000, duration_range=(50, 200), 
                     n_anomalies=5, anomaly_strength=1.5, seed=None):
     """
-    Crée plusieurs anomalies dans les séries temporelles multivariées.
+    Create synthetic anomalies in multivariate time series data.
     
     Args:
-        data: Matrice de shape (n_variables, n_timesteps)
-        start_index: Index de début des anomalies
-        duration_range: Tuple (min_duration, max_duration) pour la longueur des anomalies
-        n_anomalies: Nombre d'anomalies à créer
-        anomaly_strength: Force de l'anomalie (multiplicateur de l'écart-type)
-        seed: Seed pour la reproductibilité
-        
+        data: Array of shape (n_variables, n_timesteps)
+        start_index: Start index for the anomalies
+        duration_range: Tuple (min_duration, max_duration) for the length of the anomalies
+        n_anomalies: Number of anomalies to create
+        anomaly_strength: Strength of the anomaly (standard deviation multiplier)
+        seed: Seed for reproducibility
+
     Returns:
-        np.array: Données avec anomalies
-        list: Liste des informations sur les anomalies créées
+        np.array: Data with anomalies
+        list: List of information about the created anomalies
     """
     if seed is not None:
         np.random.seed(seed)
@@ -72,7 +72,7 @@ def create_anomalies(data, start_index=15000, duration_range=(50, 200),
 
 def plot_anomalies(data_normal, data_anomalous, anomalies_info, n_series_to_plot=3):
     """
-    Visualise les séries avec anomalies.
+    Visualize anomalies in multivariate time series data.
     """
     n_variables, n_timesteps = data_normal.shape
     
@@ -103,6 +103,9 @@ def plot_anomalies(data_normal, data_anomalous, anomalies_info, n_series_to_plot
 
 
 def generate_example(data_train):
+    """
+    Example usage of create_anomalies.
+    """
     return create_anomalies(
     data=data_train,
     start_index=15000,

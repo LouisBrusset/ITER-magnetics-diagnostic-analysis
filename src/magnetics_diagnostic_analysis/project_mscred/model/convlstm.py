@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 
 
-
-
 ## Convolutional Long-Short Term Memory (ConvLSTM) Cell
 class ConvLSTMCell(nn.Module):
     """
@@ -11,7 +9,7 @@ class ConvLSTMCell(nn.Module):
     The discrepancy between the ConvLSTM and simple LSTM lies in the use of convolutional operations instead of fully connected layers,
     allowing the ConvLSTM to capture spatial hierarchies in the data.
 
-    Functions:
+    Methods:
         __init__: Initializes the ConvLSTM cell with input channels, hidden channels, and kernel size.
         forward: Performs the forward pass of the ConvLSTM cell.
         init_hidden: Initializes the hidden and cell states for the ConvLSTM cell.
@@ -65,9 +63,9 @@ class ConvLSTMCell(nn.Module):
         Forward pass of the ConvLSTM cell.
 
         Args:
-            x: Input tensor of shape (batch_size, input_channels, height, width)
-            h: Hidden state tensor of shape (batch_size, hidden_channels, height, width)
-            c: Cell state tensor of shape (batch_size, hidden_channels, height, width)
+            x (torch.Tensor): Input tensor of shape (batch_size, input_channels, height, width)
+            h (torch.Tensor): Hidden state tensor of shape (batch_size, hidden_channels, height, width)
+            c (torch.Tensor): Cell state tensor of shape (batch_size, hidden_channels, height, width)
 
         Returns:
             Tuple of updated hidden state and cell state tensors, shape (batch_size, hidden_channels, height, width)
@@ -97,10 +95,10 @@ class ConvLSTMCell(nn.Module):
         This is done only once, at the first step of the forward pass.
 
         Args:
-            batch_size: Size of the batch
-            hidden: Number of hidden channels
-            shape: Shape of the input (height, width)
-            device: Device to place the tensors on
+            batch_size (int): Size of the batch
+            hidden (int): Number of hidden channels
+            shape (tuple[int]): Shape of the input (height, width)
+            device (str): Device to place the tensors on
 
         Returns:
             Tuple of initialized hidden state and cell state tensors.
@@ -125,7 +123,7 @@ class ConvLSTM(nn.Module):
     A ConvLSTM model is a sequence of ConvLSTM cells that processes the input tensor over multiple steps.
     If len(hidden_channels) == 1, it behaves like a standard ConvLSTM cell alone.
 
-    Functions:
+    Methods:
         __init__: Initializes the ConvLSTM model with input channels, hidden channels, kernel size, step, and effective step.
         reset_hidden_state: Resets the hidden states h and c of the ConvLSTM model to zeros.
         forward: Performs the forward pass of the ConvLSTM model.
@@ -187,7 +185,7 @@ class ConvLSTM(nn.Module):
         Each layer is a ConvLSTM cell that takes the output of the previous layer as input.
 
         Args:
-            input: Input tensor of shape (self.step, input_channels, height, width)
+            input (torch.Tensor): Input tensor of shape (self.step, input_channels, height, width)
 
         Returns:
             Tuple containing:

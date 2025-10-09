@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from collections import deque
 
-from .convlstm import ConvLSTM
+from magnetics_diagnostic_analysis.project_mscred.model.convlstm import ConvLSTM
 
 
 ## Attention mechanism for Conv_LSTM output
@@ -30,7 +30,7 @@ def attention(
         and producing a sharp distribution in weights (small rescale_factor = one weight dominates) with the softmax function.
     
     Post Scriptum: 
-        In the future, we could replace this attention mechanism with a more sophisticated one, such as a query-key attention mechanism.
+        In the future, we could replace this attention mechanism with a more sophisticated one, such as a query-key-value attention mechanism.
     """
     assert rescale_factor > 0, "Rescale factor must be positive and non zero"
 
@@ -389,7 +389,7 @@ class MSCRED(nn.Module):
         self.time_steps = lstm_timesteps
         self.model_depth = len(deep_channel_sizes)
 
-    def reset_lstm_hidden_states(self):
+    def reset_lstm_hidden_states(self) -> None:
         """
         Initializes all the hidden states (h,c) of the ConvLSTM layers.
         """

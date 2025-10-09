@@ -27,14 +27,14 @@ def load_model(model_name: str = config.BEST_MODEL_NAME):
         lstm_timesteps=config.LSTM_TIMESTEPS,
         lstm_effective_timesteps=config.LSTM_EFFECTIVE_TIMESTEPS
     )
-    #mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name}.pth"))
-    mscred.load_state_dict(torch.load(Path(__file__).absolute().parent.parent / "checkpoints/model_checkpointed.pth"))
+    mscred.load_state_dict(torch.load(config.DIR_MODEL_PARAMS / f"{model_name}.pth"))
+    #mscred.load_state_dict(torch.load(Path(__file__).absolute().parent.parent / "checkpoints/model_checkpointed.pth"))     # For development purpose
     return mscred
 
 
 
 def find_anomaly_threshold(
-    model, 
+    model: MSCRED, 
     data_loader: torch.utils.data.DataLoader, 
     beta: float = 1.5, 
     device: torch.device = config.DEVICE
@@ -86,7 +86,7 @@ def find_anomaly_threshold(
 
 
 def detect_anomalies_all(
-    model, 
+    model: MSCRED, 
     data_loader: torch.utils.data.DataLoader, 
     threshold: float = 1.0, 
     device: torch.device = config.DEVICE

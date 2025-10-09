@@ -10,7 +10,15 @@ from magnetics_diagnostic_analysis.project_mscred.utils.synthetic_anomaly_adding
 
 
 def select_data_channels(ds, n_to_keep: int = 32, mandatory_channels: list[str] = []) -> np.ndarray:
-    """Select specific data channels from the dataset based on the provided groups."""
+    """
+    Select specific data channels from the dataset based on the provided groups.
+    Choose n_to_keep channels, ensuring mandatory_channels are included, and fill the rest randomly from good channels.
+
+    Args:
+        ds: xarray Dataset containing the data
+        n_to_keep: Total number of channels to keep (including mandatory channels)
+        mandatory_channels: List of channels that must be included
+    """
     # Load possible channels
     path = Path(__file__).absolute().parent.parent.parent.parent.parent / "notebooks/result_files/nan_stats_magnetics/result_lists_magnetics_nans.json"
     with open(path) as f:
@@ -51,6 +59,16 @@ def select_data_channels(ds, n_to_keep: int = 32, mandatory_channels: list[str] 
 
 
 def build_windows():
+    """
+    Build sliding windows from the selected data channels.
+
+    Steps:
+    1. Load preprocessed data.
+    2. Select specific channels.
+    3. Add synthetic anomalies.
+    4. Generate signature matrix.
+    5. Save results.
+    """
     # Load preprocessed data
     data_path = config.DIR_PREPROCESSED_DATA / f"data_magnetics_{config.SUFFIX}_cleaned.nc"
     ds = xr.open_dataset(data_path)

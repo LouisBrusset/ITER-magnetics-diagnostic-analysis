@@ -13,7 +13,14 @@ from magnetics_diagnostic_analysis.project_mscred.utils.dataloader_building impo
 from magnetics_diagnostic_analysis.project_mscred.model.mscred import MSCRED
 
 
-def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: torch.optim.Optimizer, epochs: int, device: torch.device, valid_loader: torch.utils.data.DataLoader = None):
+def train(
+        model: nn.Module, 
+        dataLoader: torch.utils.data.DataLoader, 
+        optimizer: torch.optim.Optimizer, 
+        epochs: int, 
+        device: torch.device, 
+        valid_loader: torch.utils.data.DataLoader = None
+        ) -> tuple[dict, nn.Module]:
     torch.cuda.empty_cache()
     model = model.to(device)
     print("------training on {}-------".format(device))
@@ -82,6 +89,15 @@ def train(model: nn.Module, dataLoader: torch.utils.data.DataLoader, optimizer: 
     return history, model
 
 def plot_history(history_train: list, history_valid: list) -> None:
+    """
+    Plots the training and validation loss over epochs.
+    Args:
+        history_train (list): List of training loss values.
+        history_valid (list): List of validation loss values.
+    Returns:
+        None
+        Saves the plot as 'last_training_history.png' in the figures directory.
+    """
     plt.figure(figsize=(8, 5))
     plt.plot(history_train, 'b-', linewidth=2, label='Train Loss')
     plt.plot(history_valid, 'r-', linewidth=2, label='Valid Loss')

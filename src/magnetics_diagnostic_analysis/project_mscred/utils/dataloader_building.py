@@ -3,7 +3,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 class TimeSeriesDataset(Dataset):
-    def __init__(self, data: np.ndarray, device: str = "cpu", start_idx: int = 0, end_idx: int = -1):
+    def __init__(self, data: np.ndarray, start_idx: int = 0, end_idx: int = -1):
         self.data = torch.from_numpy(data[start_idx:end_idx]).float()       # Convert to float32 to be compatible with PyTorch model parameters
 
     def __len__(self):
@@ -19,7 +19,6 @@ def create_data_loaders(
         batch_size:int = 10, 
         gap_time: int = 10, 
         set_separations:list[int] = [12000, 15000], 
-        device: str = "cpu"
         ) -> tuple[DataLoader]:
     """
     Create train, validation and test data loaders from time series data
@@ -46,9 +45,9 @@ def create_data_loaders(
     test_start = min(test_start, total_timesteps)
     
     # Datasets
-    train_dataset = TimeSeriesDataset(data, device, 0, train_end)
-    valid_dataset = TimeSeriesDataset(data, device, valid_start, valid_end)
-    test_dataset = TimeSeriesDataset(data, device, test_start, total_timesteps)
+    train_dataset = TimeSeriesDataset(data, 0, train_end)
+    valid_dataset = TimeSeriesDataset(data, valid_start, valid_end)
+    test_dataset = TimeSeriesDataset(data, test_start, total_timesteps)
     
     # Check if batch sizes are compatible
     if len(train_dataset) % batch_size != 0:
@@ -65,21 +64,18 @@ def create_data_loaders(
         shuffle=False,      # Very important
         drop_last=False     # Either that with the assertion or drop_last=True without assertion (for more freedom)
     )
-    
     valid_loader = DataLoader(
         valid_dataset,
         batch_size=batch_size,
         shuffle=False,
         drop_last=False
     )
-    
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
         drop_last=False
     )
-    
     return train_loader, valid_loader, test_loader
 
 
@@ -95,8 +91,7 @@ if __name__ == "__main__":
         data=data,
         batch_size=10,
         set_separations=[12000, 15000],
-        gap_time=10,
-        device="cpu"  # or "cuda" if available
+        gap_time=10
     )
     
     # Print dataset sizes
