@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
@@ -15,7 +14,6 @@ from magnetics_diagnostic_analysis.ml_tools.train_callbacks import EarlyStopping
 
 
 # Training loop
-
 def train_scinet(
         train_loader: DataLoader, 
         valid_loader: DataLoader,
@@ -27,8 +25,26 @@ def train_scinet(
         gradient_clipper: GradientClipping = None, 
         lr_scheduler: LRScheduling = None,
         device: torch.device = torch.device('cpu')
-        ) -> None:
-    
+        ) -> dict:
+    """
+    Train the SciNet model.
+
+    Args:
+        train_loader (DataLoader): DataLoader for the training dataset.
+        valid_loader (DataLoader): DataLoader for the validation dataset.
+        model (torch.nn.Module): The SciNet model to be trained.
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+        num_epochs (int): Number of epochs to train the model.
+        kld_beta (float): Weight for the KLD loss component.
+        early_stopper (EarlyStopping, optional): Early stopping callback. Defaults to None.
+        gradient_clipper (GradientClipping, optional): Gradient clipping callback. Defaults to None.
+        lr_scheduler (LRScheduling, optional): Learning rate scheduler callback. Defaults to None.
+        device (torch.device): Device to run the training on (CPU or GPU).
+
+    Returns:
+        dict: Training history containing training and validation losses.
+        model is modified in place.
+    """
     torch.cuda.empty_cache()
     model.to(device)
     print("------training on {}-------\n".format(device))
@@ -99,6 +115,18 @@ def train_scinet(
 
 
 def plot_history(history_train: list, history_valid: list) -> None:
+    """
+    Plot training and validation loss history.
+
+    Args:
+        history_train (list): List of training losses per epoch.
+        history_valid (list): List of validation losses per epoch.
+
+    Returns:
+        None
+        Saves the plot to a file.
+    """
+
     plt.figure(figsize=(8, 5))
     plt.plot(history_train, 'b-', linewidth=2, label='Train Loss')
     plt.plot(history_valid, 'r-', linewidth=2, label='Valid Loss')

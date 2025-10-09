@@ -11,7 +11,23 @@ from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum i
 
 
 
-def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), maxtime=5.0, timesteps=500):
+def build_dataset(num_samples: int = 1000, kapa_range: tuple = (3.0, 8.0), b_range: tuple = (0.1, 1.0), maxtime: float = 5.0, timesteps: int = 500) -> tuple[np.ndarray]:
+    """
+    Build a dataset for the pendulum problem.
+
+    Args:
+        num_samples (int): Number of samples to generate.
+        kapa_range (tuple): Range of the spring constant (kapa).
+        b_range (tuple): Range of the damping coefficient (b).
+        maxtime (float): Maximum time for the time series.
+        timesteps (int): Number of time steps in the time series.
+
+    Returns:
+        observations (np.ndarray): Array of shape (num_samples, timesteps) containing the time series observations.
+        questions (np.ndarray): Array of shape (num_samples,) containing the time points to query.
+        answers (np.ndarray): Array of shape (num_samples,) containing the answers to the questions.
+        params (np.ndarray): Array of shape (num_samples, 2) containing the (kapa, b) parameters for each sample.
+    """
     observations = []
     questions = []
     params = []
@@ -36,6 +52,9 @@ def build_dataset(num_samples=1000, kapa_range=(3.0, 8.0), b_range=(0.1, 1.0), m
 
 
 class PendulumDataset(Dataset):
+    """
+    Inherits from torch.utils.data.Dataset to create a dataset for the pendulum problem.
+    """
     def __init__(self, observations, questions, answers, params):
         self.observations = torch.tensor(observations, dtype=torch.float32)
         self.questions = torch.tensor(questions, dtype=torch.float32)
@@ -48,8 +67,6 @@ class PendulumDataset(Dataset):
     def __getitem__(self, idx):
         return self.observations[idx], self.questions[idx], self.answers[idx], self.params[idx]
     
-
-
 
 
 if __name__ == "__main__":

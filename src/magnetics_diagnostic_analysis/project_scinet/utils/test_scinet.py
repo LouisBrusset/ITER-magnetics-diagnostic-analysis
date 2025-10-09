@@ -3,17 +3,25 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 
-import gc
-
 from magnetics_diagnostic_analysis.project_scinet.setting_scinet import config
 from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum import data_synthetic_pendulum
 from magnetics_diagnostic_analysis.project_scinet.utils.build_dataset import build_dataset
 from magnetics_diagnostic_analysis.project_scinet.model.scinet import PendulumNet
 
 
-
-
 def make_one_prediction(model: nn.Module, observation: np.array, question: float, device: torch.device = torch.device('cpu')) -> float:
+    """
+    Make a single prediction by inference using the trained model.
+
+    Args:
+        model (nn.Module): The trained model.
+        observation (np.array): The input observation.
+        question (float): The input question.
+        device (torch.device, optional): The device to run the model on. Defaults to CPU.
+
+    Returns:
+        float: The predicted answer.
+    """
     torch.cuda.empty_cache()
     model.to(device).eval()
     observation_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0).to(device)
@@ -22,7 +30,20 @@ def make_one_prediction(model: nn.Module, observation: np.array, question: float
         possible_answer, _, _ = model(observation_tensor, question_tensor)
     return possible_answer.item()
 
-def make_timeserie_prediction(model: nn.Module, observation: np.array, questions: np.array, device: torch.device = torch.device('cpu')) -> float:
+def make_timeserie_prediction(model: nn.Module, observation: np.array, questions: np.array, device: torch.device = torch.device('cpu')) -> np.array:
+    """
+    Make a timeserie prediction by inference using the trained model.
+
+    Args:
+        model (nn.Module): The trained model.
+        observation (np.array): The input observation.
+        questions (np.array): The input questions.
+        device (torch.device, optional): The device to run the model on. Defaults to CPU.
+
+    Returns:
+        np.array: The predicted answers.
+
+    """
     torch.cuda.empty_cache()
     model.to(device).eval()
     observation_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0).to(device)
@@ -35,7 +56,22 @@ def make_timeserie_prediction(model: nn.Module, observation: np.array, questions
     return np.array(possible_answers)
 
 
-def plot_one_prediction(observation, question, answer, possible_answer, maxtime, timesteps) -> None:
+def plot_one_prediction(observation: np.array, question: float, answer: float, possible_answer: float, maxtime: float, timesteps: int) -> None:
+    """
+    Plot the prediction for one question.
+
+    Args:
+        observation (np.array): The input observation.
+        question (float): The input question.
+        answer (float): The true answer.
+        possible_answer (float): The predicted answer.
+        maxtime (float): The maximum time for the x-axis.
+        timesteps (int): The number of timesteps for the x-axis.
+
+    Returns:
+        None
+        Saves the plot to a file.
+    """
     fig = plt.figure(figsize=(10, 6))
     time = np.linspace(0, maxtime, timesteps)
     plt.plot(time, observation, label='Observation', color='blue')
@@ -51,7 +87,21 @@ def plot_one_prediction(observation, question, answer, possible_answer, maxtime,
     plt.close()    
     return None
 
-def plot_timeserie_prediction(observations, answers, possible_answers, maxtime, timesteps) -> None:
+def plot_timeserie_prediction(observations: np.array, answers: np.array, possible_answers: np.array, maxtime: float, timesteps: int) -> None:
+    """
+    Plot the timeserie prediction.
+
+    Args:
+        observations (np.array): The input observations.
+        answers (np.array): The true answers.
+        possible_answers (np.array): The predicted answers.
+        maxtime (float): The maximum time for the x-axis.
+        timesteps (int): The number of timesteps for the x-axis.
+
+    Returns:
+        None
+        Saves the plot to a file.
+    """
     fig = plt.figure(figsize=(10, 6))
     time = np.linspace(0, maxtime, timesteps)
     time_next = np.linspace(maxtime, maxtime*2, timesteps)

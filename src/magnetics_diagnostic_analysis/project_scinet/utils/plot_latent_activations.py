@@ -10,6 +10,17 @@ from magnetics_diagnostic_analysis.project_scinet.model.scinet import PendulumNe
 
 
 def load_trained_model(model_path: str, device: torch.device = torch.device('cpu')) -> PendulumNet:
+    """
+    Load a trained PendulumNet model from a file.
+
+    Args:
+        model_path (str): Path to the model file.
+        device (torch.device, optional): Device to load the model onto. Defaults to CPU.
+
+    Returns:
+        PendulumNet: The loaded model.
+    """
+    torch.cuda.empty_cache()
     model = PendulumNet(
         input_size=config.M_INPUT_SIZE,
         enc_hidden_sizes=config.M_ENC_HIDDEN_SIZES,
@@ -25,6 +36,17 @@ def load_trained_model(model_path: str, device: torch.device = torch.device('cpu
 
 
 def get_one_latent_activation(model: nn.Module, observation: np.array, device: torch.device = torch.device('cpu')) -> np.array:
+    """
+    Get the latent activation for a single observation.
+
+    Args:
+        model (nn.Module): The trained model.
+        observation (np.array): The input observation.
+        device (torch.device, optional): The device to run the model on. Defaults to CPU.
+
+    Returns:
+        np.array: The latent activation.
+    """
     torch.cuda.empty_cache()
     model.to(device).eval()
     observation_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0).to(device)
@@ -35,13 +57,27 @@ def get_one_latent_activation(model: nn.Module, observation: np.array, device: t
     return np.array(latent_activations)
 
 
+def get_latent_activations(model: nn.Module, kapa_range: tuple, b_range: tuple, pixel_by_line: int = 50, device: torch.device = torch.device('cpu')) -> tuple[np.array]:
+    """
+    Get the latent activations for a grid of (kapa, b) values.
 
-def get_latent_activations(model: nn.Module, kapa_range, b_range, pixel_by_line: int = 50, device: torch.device = torch.device('cpu')) -> np.array:
+    Args:
+        model (nn.Module): The trained model.
+        kapa_range (tuple): Range of kapa values (min, max).
+        b_range (tuple): Range of b values (min, max).
+        pixel_by_line (int, optional): Number of points per axis. Defaults to 50.
+        device (torch.device, optional): The device to run the model on. Defaults to CPU
+
+    Returns:
+        3-tuple containing:
+            np.array: The grid of kapa values
+            np.array: The grid of b values
+            np.array: The latent activations for the grid of (kapa, b) values
+    """
     # Create a grid of (kapa, b) values
     kapa_values = np.linspace(*kapa_range, pixel_by_line)
     b_values = np.linspace(*b_range, pixel_by_line)
     kapa_grid, b_grid = np.meshgrid(kapa_values, b_values)
-    
 
     # Loop over the grid and get latent activations
     latent_activations = []
@@ -57,8 +93,21 @@ def get_latent_activations(model: nn.Module, kapa_range, b_range, pixel_by_line:
     return kapa_grid, b_grid, latents
 
 
+def plot_3d_latent_activations(kapa_grid: np.array, b_grid: np.array, latent_activations: np.array, save_path: str, shared_scale: bool = False) -> None:
+    """"
+    Plot the latent activations in 3D for each latent dimension.
 
-def plot_3d_latent_activations(kapa_grid, b_grid, latent_activations: np.array, save_path: str, shared_scale: bool = False) -> None:
+    Args:
+        kapa_grid (np.array): The grid of kapa values.
+        b_grid (np.array): The grid of b values.
+        latent_activations (np.array): The latent activations for the grid of (kapa, b) values.
+        save_path (str): Path to save the plot.
+        shared_scale (bool, optional): Whether to use a shared z-axis scale for all plots. Defaults to False.
+
+    Returns:
+        None
+        Figures are saved to the specified path.
+    """
     latent_dim = latent_activations.shape[2]
     fig = plt.figure(figsize=(6*latent_dim, 8))
 

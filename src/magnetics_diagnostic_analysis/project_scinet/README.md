@@ -1,118 +1,90 @@
 # Project SCINet Module
 
-Sample Convolution and Interaction Network (SCINet) implementation for time series analysis and prediction on magnetics diagnostic data.
+Science network (SCINet) implementation for time series analysis, representation learning and prediction on magnetics diagnostic data.
+
+Scinet is inspired of this paper: [Discover physical concepts and equations with machine learning](https://arxiv.org/abs/2412.12161)
 
 ## Table of Contents
 
 1. [Files](#-files)
-2. [SCINet Overview](#-scinet-overview)
-3. [Core Components](#-core-components)
-4. [Usage Example](#-usage-example)
-5. [Model Architecture](#-model-architecture)
-6. [Training and Evaluation](#-training-and-evaluation)
-7. [Configuration Parameters](#-configuration-parameters)
-8. [Best Practices](#-best-practices)
+2. [SCINet Overview - Architecture](#-scinet-overview---architecture)
+3. [Utilisation](#-utilisation)
+4. [Configuration Parameters](#-configuration-parameters)
 
 ## 📁 Files
 
 ### Main Files
-- **`setting_scinet.py`** - Configuration and settings for SCINet
-- **`train_scinet.py`** - Training pipeline for SCINet model
+- **`setting_scinet.py`** - Configuration and settings for SciNet
+- **`train_scinet.py`** - Training function for SCINet model (dataset need to be ready at this point)
 
 ### Model Architecture
-- **`model/scinet.py`** - SCINet neural network implementation
+- **`model/scinet.py`** - SciNet neural network implementation
 
 ### Utilities
-- **`utils/build_dataset.py`** - Dataset construction and preprocessing
-- **`utils/data_creation_pendulum.py`** - Synthetic pendulum data generation for testing
-- **`utils/plot_latent_activations.py`** - Visualization of model internal activations
-- **`utils/test_scinet.py`** - Model testing and evaluation functions
+- **`utils/build_dataset.py`** - Custom dataset construction and preprocessing
+- **`utils/data_creation_pendulum.py`** - Synthetic pendulum data generation to build the dataset
+- **`utils/plot_latent_activations.py`** - Model testing and evaluation functions: mainly to have a visualization of the latent neurons' activations
+- **`utils/test_scinet.py`** - Model testing and evaluation functions: mainly to have the reconstruction
 
 ### Checkpoints
-- **`checkpoints/`** - Saved model checkpoints and weights
+- **`checkpoints/`** - Saved model checkpoints and weights during training in case of failure>
 
-## 🔬 SCINet Overview
+## 🔬 SCINet Overview - Architecture
 
-SCINet (Sample Convolution and Interaction Network) is a neural network designed for time series forecasting that:
-- Uses sample convolution to capture temporal patterns
-- Employs interaction mechanisms for feature learning
-- Provides efficient time series prediction capabilities
-- Supports both univariate and multivariate time series
+SCINet is a neural network designed for recovery of the physical parameter based only on observation>
+- Looks like an Auto-Encoder
+- Encoder encodes in the latent space with $\mu$ and $\sigma$ in order to use a KL divergence in the loss.
+- Then the input of the decoder is built with the latent vector (sampled thanks to the reparametrization trick) concatened with a question vector.
+- The output must answer the question based on the pysical parameters recovered by the encoder (basically based on observation).
 
-## 🔧 Core Components
+Note that:
+- There are no physical preconceptions: the Auto-Encoder only works with observation.
+- The KL divergence in the latent space force the latent variable to be independant one from another: what we want for a physical parameter.
 
-### Model Training
-```python
-from magnetics_diagnostic_analysis.project_scinet import train_scinet
+## 🔧 Utilisation
 
-# Train SCINet model
-train_scinet.main()
+### Synthetic data creation: damped pendulum case
+```bash
+cd src/magnetics_diagnostic_analysis/project_scinet/
+# If using python .env
+python utils/build_dataset.py
+# If using uv .venv
+uv run utils/build_dataset.py
 ```
 
-### Configuration
-```python
-from magnetics_diagnostic_analysis.project_scinet import setting_scinet
-
-# Load SCINet settings
-config = setting_scinet.load_config()
+### Train the model
+```bash
+cd src/magnetics_diagnostic_analysis/project_scinet/
+# If using python .env
+python train_scinet.py
+# If using uv .venv
+uv run train_scinet.py
 ```
 
-### Dataset Building
-```python
-from magnetics_diagnostic_analysis.project_scinet.utils import build_dataset
-
-# Build dataset for SCINet training
-dataset = build_dataset.create_dataset(data)
+### Evaluation: inference for prediction
+```bash
+cd src/magnetics_diagnostic_analysis/project_scinet/
+# If using python .env
+python utils/test_scinet.py
+# If using uv .venv
+uv run utils/test_scinet.py
 ```
 
-### Testing and Evaluation
-```python
-from magnetics_diagnostic_analysis.project_scinet.utils import test_scinet
-
-# Test trained SCINet model
-results = test_scinet.evaluate_model(model, test_data)
+### Evaluation: inference for latent space visualization
+```bash
+cd src/magnetics_diagnostic_analysis/project_scinet/
+# If using python .env
+python utils/plot_latent_activations.py
+# If using uv .venv
+uv run utils/plot_latent_activations.py
 ```
-
-### Visualization
-```python
-from magnetics_diagnostic_analysis.project_scinet.utils import plot_latent_activations
-
-# Visualize model activations
-plot_latent_activations.plot_activations(model, data)
-```
-
-## 🏗️ Model Architecture
-
-SCINet employs a hierarchical structure with:
-- **Sample Convolution**: Efficient temporal pattern extraction
-- **Interaction Blocks**: Cross-feature learning mechanisms
-- **Recursive Structure**: Multi-scale temporal modeling
-- **Skip Connections**: Enhanced gradient flow
-
-## 🚀 Training and Evaluation
-
-### Training Pipeline
-1. Data preprocessing and windowing
-2. Model configuration setup
-3. Training loop with checkpointing
-4. Validation and early stopping
-
-### Evaluation Metrics
-- Time series forecasting accuracy
-- Computational efficiency
-- Model interpretability measures
 
 ## ⚙️ Configuration Parameters
 
-Key parameters for SCINet training:
-- **Window size**: Input sequence length
-- **Prediction horizon**: Output sequence length
-- **Model depth**: Number of interaction blocks
-- **Learning rate**: Optimization parameters
+All parameters are stored in the file `setting_scinet.py`.
 
-## 🎯 Best Practices
-
-- Use appropriate window sizes for your time series
-- Monitor training stability with visualization tools
-- Validate on held-out test sets
-- Consider computational requirements for deployment
+Key parameters for SCINet:
+- **FIRST_LEARNING_RATE**: to have a stable training
+- **KLD_BETA**: To recover the physical parameter but have also a good reconstruction
+- **LRS_PATIENCE**: Step before that the LR automatically decreases
+- **GC_MAX_NORM**: Maximum of the gradient norm during weights' update

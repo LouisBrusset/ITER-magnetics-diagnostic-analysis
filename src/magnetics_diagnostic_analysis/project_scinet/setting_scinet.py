@@ -18,6 +18,10 @@ class Config:
     DIR_PARAMS_CHECKPOINTS = Path(__file__).absolute().parent / f"checkpoints"
     DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
     DIR_FIGURES = Path(__file__).absolute().parent.parent.parent.parent / f"results/figures/{SUFFIX}"
+    # Check and create directories if they do not exist
+    for directory in [DIR_DATA, DIR_SYNTHETIC_DATA, DIR_PARAMS_CHECKPOINTS, DIR_MODEL_PARAMS, DIR_FIGURES]:
+        directory.mkdir(parents=True, exist_ok=True)
+
 
     ### PyTorch device & set seed for reproducibility
     DEVICE = select_torch_device(temporal_dim="parallel")
