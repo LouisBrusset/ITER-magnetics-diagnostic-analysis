@@ -1,179 +1,116 @@
-# Notebooks - Exploration
+# Exploration Notebooks
 
-This directory contains Jupyter notebooks for exploratory data analysis of magnetics diagnostic data from tokamak experiments.
+This directory contains comprehensive exploratory data analysis notebooks for understanding MAST tokamak magnetics diagnostic data. These notebooks provide essential data quality assessment, shot selection criteria, and metadata analysis required for machine learning model development.
 
 ## Table of Contents
 
-1. [Available Notebooks](#-available-notebooks)
-2. [Key Features](#-key-features)
-3. [Quick Start](#-quick-start)
-4. [Data Sources](#-data-sources)
-5. [Analysis Outputs](#-analysis-outputs)
+1. [Overview](#overview)
+2. [Notebook Descriptions](#notebook-descriptions)
+3. [Key Functions and Classes](#key-functions-and-classes)
+4. [Data Analysis Workflows](#data-analysis-workflows)
+5. [Usage Examples](#usage-examples)
+6. [Data Sources and Outputs](#data-sources-and-outputs)
 
-## 📊 Available Notebooks
+## Overview
 
-### `cleaned_dataframe_opening_test.ipynb`
-Testing and validation of cleaned dataframe loading procedures:
-- Dataset loading verification
-- Data structure validation
-- Quality checks for preprocessed data
+The exploration notebooks focus on four critical aspects of tokamak data analysis:
 
-### `mast_metadata_analysis.ipynb`
-Comprehensive analysis of MAST experiment metadata:
-- Shot quality assessment
-- Campaign statistics
-- Diagnostic availability analysis
-- Data completeness evaluation
+- **Data Quality Assessment**: Validation of cleaned datasets and preprocessing pipelines
+- **Metadata Analysis**: Comprehensive examination of MAST experimental parameters and shot quality
+- **Shot Selection**: Development of filtering criteria for high-quality plasma experiments
+- **Statistical Analysis**: Variable presence, NaN statistics, and channel distribution analysis
 
-### `mast_shots_choice.ipynb`
-Analysis and selection criteria for MAST shots:
-- Shot filtering strategies
-- Quality metrics evaluation
-- Selection criteria development
+## Notebook Descriptions
 
-### `scrapped_dataframe_analysis.ipynb`
-Analysis of scraped and processed dataframes:
-- Data structure exploration
-- Variable and channel analysis
-- Statistical summaries
-- Data quality assessment
+### 1. `cleaned_dataframe_opening_test.ipynb`
 
-## 🔧 Key Features
+**Subject**: Validation and testing of cleaned dataframe loading procedures for preprocessed MAST magnetic diagnostic data.
 
-- **Interactive Exploration**: Step-by-step data analysis workflows
-- **Metadata Analysis**: Comprehensive examination of experimental parameters
-- **Quality Assessment**: Data validation and filtering procedures
-- **Visualization**: Statistical plots and data distribution analysis
+**Purpose**: Ensures data integrity after preprocessing pipeline, validates variable shapes, and confirms proper channel counting for downstream machine learning applications.
 
-## 🚀 Quick Start
+### 2. `mast_metadata_analysis.ipynb`
 
-1. Navigate to the notebooks directory
-2. Start Jupyter Lab or Jupyter Notebook
-3. Open any notebook to begin exploration
-4. Follow the documented workflow in each notebook
+**Subject**: Comprehensive analysis of MAST tokamak experimental metadata for shot quality assessment and campaign statistics.
 
-## 📈 Data Sources
+**Purpose**: Addresses critical research questions: "How many shots in M9 campaign?", "Quality labels for each shot", "Diagnostic-specific quality assessment", and "EFIT++ reconstruction analysis".
 
-- MAST tokamak experimental database
-- Magnetics diagnostic measurements
-- Experimental metadata and shot parameters
+### 3. `mast_shots_choice.ipynb`
 
-## 📋 Analysis Outputs
+**Subject**: Development of shot selection criteria and filtering strategies for identifying high-quality MAST tokamak data suitable for machine learning analysis.
 
-- Data quality reports
-- Statistical summaries
-- Visualization plots
-- Processed datasets ready for ML analysis
+**Purpose**: Establishes robust criteria for shot selection, implements parallel data loading strategies, and creates filtered datasets ready for machine learning model training.
 
-**Key objectives addressed:**
-- How many shots in the M9 campaign?
-- Quality labels for each shot
-- Diagnostic-specific quality assessment
-- EFIT++ reconstruction analysis
+### 4. `scrapped_dataframe_analysis.ipynb`
 
-## 🔧 Key Features
+**Subject**: Statistical analysis of scraped and processed tokamak dataframes including variable presence analysis, channel distribution, and data quality assessment.
 
-### Data Visualization
-- Variable presence analysis
-- NaN statistics by shot and variable
-- Data quality heatmaps
-- Time series plotting
-
-### Statistical Analysis
-- Channel distribution analysis
-- Data completeness assessment
-- Quality metrics calculation
-
-## 🚀 Quick Start
-
-To run the analysis notebooks:
-
-```bash
-# Activate your environment
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-
-# Start Jupyter Lab
-jupyter lab
-
-# Navigate to src/magnetics_diagnostic_analysis/data_analysis/
-```
-
-## 📈 Example Analysis Workflow
-
-```python
-import pandas as pd
-import xarray as xr
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Load processed data
-data_train = xr.open_dataset("path/to/train_data.nc")
-
-# Analyze variable presence
-var_channel_df = pd.DataFrame(good_vars_name, columns=["full_name"])
-var_channel_df[["variable", "channel"]] = var_channel_df["full_name"].str.split("::", expand=True)
-
-# Channel count analysis
-channel_counts = var_channel_df.groupby("variable").size().sort_values(ascending=False)
-
-# Visualization
-plt.figure(figsize=(12, 6))
-sns.barplot(data=channel_counts.head(20))
-plt.title("Top 20 Variables by Channel Count")
-plt.xticks(rotation=45)
-plt.show()
-```
-
-## 📊 Data Sources
-
-The analysis works with:
-- **Processed NetCDF files** from the data_loading module
-- **MAST metadata** from https://mastapp.site/
-- **Quality assessment results** from previous processing steps
-
-## 🎯 Analysis Outputs
-
-### Generated Files
-- `variable_presence_*.csv` - Variable availability statistics
-- `nan_stats_*.csv` - Missing data analysis
-- `*.png` - Visualization outputs
-- `result_lists_*.json` - Quality assessment results
-
-### Key Metrics
-- Data completeness by shot
-- Variable quality scores
-- Channel availability statistics
-- Temporal coverage analysis
-
-## ⚙️ Configuration
-
-Analysis parameters can be adjusted:
-- **Suffix selection**: `_mscred`, `_vae`, etc.
-- **Quality thresholds**: Customizable filtering criteria
-- **Visualization settings**: Plot parameters and styling
-
-## 💡 Tips
-
-- Use `permanent_state=True` data for steady-state analysis
-- Check variable presence before training models
-- Review NaN statistics to understand data quality
-- Use the filtered good variables list for model inputs
-
-## Table des matières
-
-- [Goals](#goals)
-- [Files and fonctionnalités](#files-and-functionalities)
-- [Installation](#installation)
-
-## Goals
-
-1. First, we have an unlabelled dataset. So our very first goal is to label this dataset.
-
-## Files and fuctionalities
-
-- `metadata_analysis.ipynb` finds the shots for the M9 campaign, finds the labels for the whole shots and finds the labels for each diagnostic thanks to outlier detection with autoencoders.
-
-- `outlier_detection.py` gather all the functions and classes that label the diagnostics.
+**Purpose**: Provides comprehensive statistical overview of scraped data, analyzes variable-channel relationships, quantifies NaN statistics, and validates data completeness for machine learning readiness.
 
 
-## Installation
+## Data Sources and Outputs
+
+### Input Data Sources
+
+- **MAST Cloud Database**: `https://mastapp.site/parquet/level2/shots` - Comprehensive shot metadata
+- **MAST Zarr Storage**: `https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr` - Raw diagnostic data
+- **Preprocessed Data**: `data/preprocessed/mscred/data_magnetics_mscred_cleaned.nc` - Cleaned magnetic diagnostics
+- **Quality Results**: 
+    - `notebooks/result_files/all_shots_magnetics/result_lists_magnetics.json` - Variable and shot selection results based on presence criteria
+    - `notebooks/result_files/non_stats_magnetics/result_lists_magnetics_nans.json` - Variables shot selection results based on both presence & NaN statistics.
+
+### Generated Outputs
+
+Some key outputs generated by the notebooks are stored in `notebooks/result_files/`:
+
+**`result_files/efit_analysis`**:
+- `coils_in_3d.png` - 3D visualization of magnetic coil positions and geometry
+- `efit_analysis.csv` - EFIT++ equilibrium reconstruction analysis results
+- `efit_analysis_with_timestamps.csv` - Time-resolved EFIT++ analysis data
+- `efit_sensors_seasons.png` - Seasonal analysis of EFIT++ sensor data
+- `efit_weights_channels0.png` - Channel weight visualization for first set
+- `efit_weights_channels1.png` - Channel weight visualization for second set
+
+**`result_files/spectral_signatures`**:
+- `b_field_pol_probe_cc_field_mean_fft.png` - FFT analysis of poloidal field CC probes
+- `b_field_pol_probe_cc_field_mean_welch.png` - Welch PSD analysis of poloidal field CC probes
+- `b_field_pol_probe_ccbv_field_mean_fft.png` - FFT analysis of poloidal field CCBV probes
+- `b_field_pol_probe_ccbv_field_mean_welch.png` - Welch PSD analysis of poloidal field CCBV probes
+- `b_field_pol_probe_obr_field_mean_fft.png` - FFT analysis of poloidal field OBR probes
+- `b_field_pol_probe_obr_field_mean_welch.png` - Welch PSD analysis of poloidal field OBR probes
+- `b_field_pol_probe_obv_field_mean_fft.png` - FFT analysis of poloidal field OBV probes
+- `b_field_pol_probe_obv_field_mean_welch.png` - Welch PSD analysis of poloidal field OBV probes
+- `b_field_pol_probe_omv_voltage_mean_fft.png` - FFT analysis of poloidal probe OMV voltages
+- `b_field_pol_probe_omv_voltage_mean_welch.png` - Welch PSD analysis of poloidal probe OMV voltages
+- `b_field_tor_probe_cc_field_mean_fft.png` - FFT analysis of toroidal field CC probes
+- `b_field_tor_probe_cc_field_mean_welch.png` - Welch PSD analysis of toroidal field CC probes
+- `b_field_tor_probe_saddle_field_mean_fft.png` - FFT analysis of toroidal saddle field probes
+- `b_field_tor_probe_saddle_field_mean_welch.png` - Welch PSD analysis of toroidal saddle field probes
+- `b_field_tor_probe_saddle_voltage_mean_fft.png` - FFT analysis of toroidal saddle voltages
+- `b_field_tor_probe_saddle_voltage_mean_welch.png` - Welch PSD analysis of toroidal saddle voltages
+- `flux_loop_flux_mean_fft.png` - FFT analysis of magnetic flux loop measurements
+- `flux_loop_flux_mean_welch.png` - Welch PSD analysis of magnetic flux loop measurements
+- `ip_mean_fft.png` - FFT analysis of plasma current (Ip) measurements
+- `ip_mean_welch.png` - Welch PSD analysis of plasma current (Ip) measurements
+
+**`result_files/non_increasing`**:
+- `non_increasing_shot_id.csv` - List of shot IDs with non-increasing time sequences
+- `non_increasing_shot_ids_plot.png` - Visualization of non-increasing shot distribution
+
+**`result_files/all_shots_magnetics`**:
+- `result_lists_magnetics.json` - Variable and shot selection results based on presence criteria
+- `variable_presence_all_shots_magnetics.csv` - Variable availability statistics across all shots
+- `variable_presence_magnetics.png` - Visualization of variable presence distribution
+- `variable_presence_magnetics_filtered.png` - Filtered variable presence analysis
+
+**`result_files/nan_stats_magnetics`**:
+- `nan_stats_per_shot_mscred.csv` - NaN statistics per shot for MSCRED processing
+- `result_lists_magnetics_nans.json` - Variable selection results based on both presence and NaN statistics
+
+
+
+
+## Notes
+
+- Parallel processing capabilities enable efficient large-scale data analysis
+- Retry mechanisms ensure robust data loading from network sources
+- Quality assessment results directly inform machine learning model training data selection

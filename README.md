@@ -15,12 +15,10 @@ This package provides tools and algorithms for analyzing magnetics diagnostic da
 
 1. [Overview](#-overview)
 2. [Package Structure](#-package-structure)
-3. [Getting Started](#-getting-started)
+3. [File Tree Explanation](#-file-tree-explanation)
+4. [Getting Started](#-getting-started)
    - [Prerequisites](#prerequisites)
    - [Installation](#installation)
-4. [Usage](#-usage)
-   - [Quick Start](#quick-start)
-   - [Data Loading](#data-loading)
 5. [Development](#-development)
    - [Running Tests](#running-tests)
    - [Code Formatting](#code-formatting)
@@ -34,14 +32,25 @@ This package provides tools and algorithms for analyzing magnetics diagnostic da
 
 ## 📦 Package Structure
 
-- **`data_downloading/`** - Data downloading and preprocessing utilities for MAST experiment data
-- **`ml_tools/`** - Machine learning utilities (metrics, training callbacks, 2D projection, etc.)
-- **`project_mscred/`** - MSCRED implementation for multivariate time series anomaly detection
-- **`project_vae/`** - VAE implementation for anomaly detection in magnetics diagnostics
-- **`project_scinet/`** - SCINet implementation for physical parameter recovery
-- **`notebooks/`** - Jupyter notebooks for exploration and experiments of architectures and of the FAIR-MAST dataset API
-- **`data/`** - Raw, preprocessed, processed, and synthetic datasets
-- **`results/`** - Model parameters, figures, and analysis results
+The package is organized into specialized modules for different aspects of magnetics diagnostic analysis:
+
+- **`src/magnetics_diagnostic_analysis/`** - Main package source code
+  - **`data_downloading/`** - MAST database integration and data acquisition utilities
+  - **`ml_tools/`** - Universal machine learning utilities (metrics, training callbacks, projections, device management)
+  - **`project_mscred/`** - Multi-Scale Convolutional Recurrent Encoder-Decoder for spatio-temporal anomaly detection
+  - **`project_vae/`** - Iterative β-Variational Autoencoder for outlier detection and latent space analysis
+  - **`project_scinet/`** - Science Network for time series prediction and physical parameter extraction
+
+- **`notebooks/`** - Jupyter notebooks for data exploration and experimentation
+  - **`exploration/`** - Data quality assessment, shot selection, and metadata analysis
+  - **`experiments/`** - Model testing, validation, and performance evaluation
+  - **`result_files/`** - Generated analysis outputs and visualization results
+
+- **`data/`** - Dataset storage and management
+- **`results/`** - Model parameters, figures, and analysis outputs  
+- **`tests/`** - Unit tests and integration tests for all modules
+- **`docs/`** - Documentation and research papers
+- **`scripts/`** - Training scripts and SLURM job configurations
 
 ## 🚀 Getting Started
 
@@ -91,21 +100,87 @@ This package provides tools and algorithms for analyzing magnetics diagnostic da
    uv pip install .
    ```
 
-## 📈 Usage
-
-### Model Training Examples
-
-```python
-# MSCRED training
+## 🌳 File Tree Explanation
 
 ```
-
-### Data Loading and Processing
-
-```python
-from magnetics_diagnostic_analysis.data_downloading import data_downloading, data_washing
-
+├── src/magnetics_diagnostic_analysis/           # Main package source code
+│   ├── data_downloading/                        # MAST database integration
+│   │   └── ...                                  # Data acquisition, steady-state filtering, data washing utilities
+│   ├── ml_tools/                                # Universal ML utilities
+│   │   └── ...                                  # Metrics, callbacks, projections, device management, preprocessing
+│   ├── project_mscred/                          # MSCRED anomaly detection
+│   │   ├── model/                               # Neural network architectures
+│   │   ├── utils/                               # Data processing, evaluation, matrix generation utilities
+│   │   └── checkpoints/                         # Model checkpoints and saved states
+│   ├── project_vae/                             # VAE outlier detection
+│   │   ├── model/                               # LSTM-based VAE architectures
+│   │   └── utils/                               # Dataset building, training visualization utilities
+│   └── project_scinet/                          # SCINet time series prediction
+│       ├── model/                               # SCINet neural network implementation
+│       ├── utils/                               # Testing, dataset building, latent space analysis
+│       └── checkpoints/                         # Training checkpoints and model states
+├── notebooks/                                   # Jupyter notebooks for analysis
+│   ├── exploration/                             # Data quality assessment and EDA
+│   ├── experiments/                             # Model testing and validation
+│   └── result_files/                            # Generated analysis outputs
+│       ├── all_shots_magnetics/                 # Shot-level analysis results
+│       ├── efit_analysis/                       # EFIT++ reconstruction analysis
+│       ├── nan_stats_magnetics/                 # Missing data statistics
+│       ├── non_increasing/                      # Temporal data quality analysis
+│       └── spectral_signatures/                 # Frequency domain analysis results
+├── data/                                        # Dataset storage and management
+│   ├── raw/                                     # Original unprocessed data
+│   ├── preprocessed/                            # Cleaned and filtered data
+│   │   ├── mscred/                              # MSCRED-specific preprocessing outputs
+│   │   └── vae/                                 # VAE-specific dataset preparations
+│   ├── processed/                               # Final model-ready datasets
+│   │   └── vae/                                 # VAE training results and outputs
+│   └── synthetic/                               # Artificially generated datasets
+│       └── scinet/                              # Synthetic pendulum data for SCINet validation
+├── results/                                     # Model outputs and analysis results
+│   ├── model_params/                            # Trained model weights and parameters
+│   │   ├── mscred/                              # MSCRED trained models
+│   │   ├── scinet/                              # SCINet trained models
+│   │   └── vae/                                 # VAE trained models
+│   └── figures/                                 # Generated plots and visualizations
+│       ├── mast_data/                           # MAST dataset analysis plots
+│       ├── mscred/                              # MSCRED training and evaluation plots
+│       ├── scinet/                              # SCINet prediction and latent space plots
+│       └── vae/                                 # VAE training history and latent space visualizations
+│           ├── train_histories/                 # Training progress plots
+│           ├── train_densities/                 # KDE threshold analysis plots
+│           └── final_vae/                       # Final model evaluation plots
+├── tests/                                       # Unit tests and integration tests
+│   ├── test_mscred/                             # MSCRED architecture and functionality tests
+│   ├── test_vae/                                # VAE model and training tests
+│   └── test_scinet/                             # SCINet implementation tests
+├── docs/                                        # Documentation and research references
+├── scripts/                                     # Training scripts and job configurations
+│
+│
+│
+├── .venv/                                       # Virtual environment (when created locally)
+├── .git/                                        # Git version control directory
+├── .pytest_cache/                               # Pytest cache directory
+│
+├── .gitignore                                   # Git ignore rules for excluded files
+├── LICENSE                                      # Project license agreement
+├── pyproject.toml                               # Python project configuration and dependencies
+├── README.md                                    # Project documentation (this file)
+└── uv.lock                                      # UV package manager lock file
 ```
+
+### Directory Purpose Summary
+
+**Core Source Code (`src/`)**: Contains all the main implementation modules with clear separation between universal tools (`ml_tools`), data acquisition (`data_downloading`), and specialized ML approaches (`project_*`).
+
+**Interactive Development (`notebooks/`)**: Organized into exploration (data understanding) and experiments (model validation), with systematic result storage in `result_files/`.
+
+**Data Management (`data/`)**: Complete data lifecycle from raw MAST downloads through preprocessing pipelines to final model-ready datasets, including synthetic data for validation.
+
+**Output Storage (`results/`)**: Centralized storage for all model artifacts (trained weights) and generated visualizations, organized by model type and analysis stage.
+
+**Quality Assurance (`tests/`)**: Comprehensive test coverage for all major components, ensuring reliability and maintainability of the codebase.
 
 
 
