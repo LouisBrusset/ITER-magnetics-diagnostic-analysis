@@ -1,10 +1,10 @@
 """
 Project MSCRED Module
 
-Multi-Scale Convolutional Recurrent Encoder-Decoder (MSCRED) implementation for anomaly detection 
+Multi-Scale Convolutional Recurrent Encoder-Decoder (MSCRED) implementation for anomaly detection
 in magnetics diagnostic data.
 
-This module provides neural network architectures, signature matrix generation, evaluation utilities, 
+This module provides neural network architectures, signature matrix generation, evaluation utilities,
 and data processing tools for MSCRED-based multivariate time series anomaly detection.
 
 Main Components:
@@ -22,37 +22,23 @@ __version__ = "0.1.0"
 __author__ = "Louis Brusset"
 
 # Import main model classes
-from .model.mscred import (
-    CnnEncoder,
-    Conv_LSTM,
-    CnnDecoder,
-    MSCRED
-)
+from .model.mscred import CnnEncoder, Conv_LSTM, CnnDecoder, MSCRED
 
 # Import ConvLSTM components
-from .model.convlstm import (
-    ConvLSTMCell,
-    ConvLSTM
-)
+from .model.convlstm import ConvLSTMCell, ConvLSTM
 
 # Import signature matrix utilities
 from .utils.matrix_generator import (
     generate_signature_matrix,
     plot_signature_matrices,
-    create_signature_matrix_animation
+    create_signature_matrix_animation,
 )
 
 # Import dataset utilities
-from .utils.dataloader_building import (
-    TimeSeriesDataset,
-    create_data_loaders
-)
+from .utils.dataloader_building import TimeSeriesDataset, create_data_loaders
 
 # Import windowing and data processing
-from .utils.window_building import (
-    select_data_channels,
-    build_windows
-)
+from .utils.window_building import select_data_channels, build_windows
 
 # Import evaluation and anomaly detection functions
 from .utils.evaluation_mscred import (
@@ -61,7 +47,7 @@ from .utils.evaluation_mscred import (
     detect_anomalies_all,
     plot_anomalies_all,
     compute_residuals,
-    detect_problematic_diagnostics
+    detect_problematic_diagnostics,
 )
 
 # Import configuration
@@ -71,26 +57,21 @@ __all__ = [
     # Model architectures
     "CnnEncoder",
     "Conv_LSTM",
-    "CnnDecoder", 
+    "CnnDecoder",
     "MSCRED",
-    
     # ConvLSTM components
     "ConvLSTMCell",
     "ConvLSTM",
-    
     # Signature matrix utilities
     "generate_signature_matrix",
     "plot_signature_matrices",
     "create_signature_matrix_animation",
-    
     # Dataset utilities
     "TimeSeriesDataset",
     "create_data_loaders",
-    
     # Data processing and windowing
     "select_data_channels",
     "build_windows",
-    
     # Evaluation and anomaly detection
     "load_model",
     "find_anomaly_threshold",
@@ -98,7 +79,6 @@ __all__ = [
     "plot_anomalies_all",
     "compute_residuals",
     "detect_problematic_diagnostics",
-    
     # Configuration
-    "config"
+    "config",
 ]

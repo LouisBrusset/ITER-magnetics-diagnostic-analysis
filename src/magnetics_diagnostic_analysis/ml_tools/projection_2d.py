@@ -6,21 +6,15 @@ import umap
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
 
 
-def project_tsne(embedding: np.ndarray, 
-                 seed: int = 42,
-                 **kwargs) -> np.ndarray:
-    tsne = TSNE(
-        n_components=2, 
-        random_state=seed, 
-        verbose=True,
-        **kwargs
-    )
+def project_tsne(embedding: np.ndarray, seed: int = 42, **kwargs) -> np.ndarray:
+    tsne = TSNE(n_components=2, random_state=seed, verbose=True, **kwargs)
     projection = tsne.fit_transform(embedding)
     return projection
 
-def project_umap(embedding: np.ndarray, 
-                 seed: int = 42,
-                 **kwargs) -> tuple[np.ndarray, umap.UMAP]:
+
+def project_umap(
+    embedding: np.ndarray, seed: int = 42, **kwargs
+) -> tuple[np.ndarray, umap.UMAP]:
     """
     Projection UMAP in visualization embedded space and return the UMAP model.
 
@@ -37,25 +31,27 @@ def project_umap(embedding: np.ndarray,
         min_dist=0.1,
         random_state=seed,
         verbose=True,
-        **kwargs
+        **kwargs,
     )
     projection = umap_model.fit_transform(embedding)
     return projection, umap_model
 
+
 def apply_umap(model: umap.UMAP, new_embedding: np.ndarray) -> np.ndarray:
-    """ Apply a trained UMAP model to new data. """
+    """Apply a trained UMAP model to new data."""
     return model.transform(new_embedding)
 
 
-
-def plot_projection(projection: np.ndarray, 
-                    labels: np.ndarray = None,
-                    title: str = "Visualisation t-SNE",
-                    filename: str = "tsne_plot.png",
-                    figsize: tuple = (12, 8),
-                    alpha: float = 0.7,
-                    legend: bool = True,
-                    verbose: bool = False) -> None:
+def plot_projection(
+    projection: np.ndarray,
+    labels: np.ndarray = None,
+    title: str = "Visualisation t-SNE",
+    filename: str = "tsne_plot.png",
+    figsize: tuple = (12, 8),
+    alpha: float = 0.7,
+    legend: bool = True,
+    verbose: bool = False,
+) -> None:
     """
     Create and save a t-SNE or UMAP projection plot.
 
@@ -70,51 +66,67 @@ def plot_projection(projection: np.ndarray,
     """
     if projection.shape[1] not in [2, 3]:
         raise ValueError("Projection dim must be 2 or 3.")
-    
-    plt.figure(figsize=figsize)
-    if projection.shape[1] == 2:    # plot 2D
-        if labels is not None:
-            unique_labels = np.unique(labels)
-            colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
-            for i, label in enumerate(unique_labels):
-                mask = labels == label
-                plt.scatter(projection[mask, 0], projection[mask, 1],
-                            c=[colors[i]], label=str(label), alpha=alpha, s=20)
-            if legend:
-                plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        else:
-            plt.scatter(projection[:, 0], projection[:, 1], 
-                       alpha=alpha, s=20, c='blue')
-        plt.xlabel('projection dim 1')
-        plt.ylabel('projection dim 2')
 
-    else:   # plot 3D
-        ax = plt.axes(projection='3d')
+    plt.figure(figsize=figsize)
+    if projection.shape[1] == 2:  # plot 2D
         if labels is not None:
             unique_labels = np.unique(labels)
             colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
             for i, label in enumerate(unique_labels):
                 mask = labels == label
-                ax.scatter3D(projection[mask, 0], projection[mask, 1], projection[mask, 2],
-                            c=[colors[i]], label=str(label), alpha=alpha, s=20)
+                plt.scatter(
+                    projection[mask, 0],
+                    projection[mask, 1],
+                    c=[colors[i]],
+                    label=str(label),
+                    alpha=alpha,
+                    s=20,
+                )
             if legend:
-                plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
         else:
-            ax.scatter3D(projection[:, 0], projection[:, 1], projection[:, 2],
-                        alpha=alpha, s=20, c='blue')
-        ax.set_xlabel('projection dim 1')
-        ax.set_ylabel('projection dim 2')
-        ax.set_zlabel('projection dim 3')
+            plt.scatter(projection[:, 0], projection[:, 1], alpha=alpha, s=20, c="blue")
+        plt.xlabel("projection dim 1")
+        plt.ylabel("projection dim 2")
+
+    else:  # plot 3D
+        ax = plt.axes(projection="3d")
+        if labels is not None:
+            unique_labels = np.unique(labels)
+            colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
+            for i, label in enumerate(unique_labels):
+                mask = labels == label
+                ax.scatter3D(
+                    projection[mask, 0],
+                    projection[mask, 1],
+                    projection[mask, 2],
+                    c=[colors[i]],
+                    label=str(label),
+                    alpha=alpha,
+                    s=20,
+                )
+            if legend:
+                plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+        else:
+            ax.scatter3D(
+                projection[:, 0],
+                projection[:, 1],
+                projection[:, 2],
+                alpha=alpha,
+                s=20,
+                c="blue",
+            )
+        ax.set_xlabel("projection dim 1")
+        ax.set_ylabel("projection dim 2")
+        ax.set_zlabel("projection dim 3")
 
     plt.title(title)
     plt.tight_layout()
-    
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
+
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
     plt.close()
     if verbose:
         print(f"Plot enregistré sous : {filename}")
-
-
 
 
 if __name__ == "__main__":
@@ -126,13 +138,12 @@ if __name__ == "__main__":
     projection_umap, umap_model = project_umap(data_nd, seed=seed)
     labels = np.random.choice([0, 1, 2], size=1000)
 
-
     plot_projection(
         projection=projection_tsne,
         labels=labels,
         title="Projection visualization t-SNE",
         filename="example_tsne.png",
-        legend=True
+        legend=True,
     )
 
     plot_projection(
@@ -140,5 +151,5 @@ if __name__ == "__main__":
         labels=labels,
         title="Projection visualization UMAP",
         filename="example_umap.png",
-        legend=True
+        legend=True,
     )

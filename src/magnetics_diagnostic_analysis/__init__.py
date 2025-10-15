@@ -6,7 +6,7 @@ using advanced machine learning techniques including MSCRED, VAE, and SCINet arc
 
 This package provides comprehensive tools for:
 - Multi-scale anomaly detection with MSCRED
-- Variational autoencoder-based outlier detection  
+- Variational autoencoder-based outlier detection
 - Time series prediction with SCINet
 - Universal machine learning utilities
 - Data downloading and preprocessing
@@ -33,18 +33,15 @@ from .ml_tools import (
     print_torch_info,
     select_torch_device,
     seed_everything,
-    
     # Preprocessing utilities
     normalize_batch,
     denormalize_batch,
-    
     # Projection and visualization
     project_tsne,
     project_umap,
     plot_projection,
-    
     # Model inspection
-    print_model_parameters
+    print_model_parameters,
 )
 
 # MSCRED - Multi-Scale Anomaly Detection
@@ -52,26 +49,21 @@ from .project_mscred import (
     # Core architectures
     MSCRED,
     ConvLSTM,
-    
     # Configuration
     config as mscred_config,
-    
     # Dataset utilities
     TimeSeriesDataset,
     create_data_loaders,
-    
     # Data processing
     select_data_channels,
     build_windows,
-    
     # Signature matrix generation
     create_signature_matrix,
-    
     # Evaluation and detection
     load_model as load_mscred_model,
     find_anomaly_threshold,
     detect_anomalies_all,
-    compute_residuals
+    compute_residuals,
 )
 
 # VAE - Iterative Variational Autoencoder
@@ -80,27 +72,22 @@ from .project_vae import (
     LSTMBetaVAE,
     LengthAwareLSTMEncoder,
     LengthAwareLSTMDecoder,
-    
     # Configuration
     config as vae_config,
-    
     # Dataset utilities
     MultivariateTimeSerieDataset,
     create_datasets,
-    
     # Training pipeline
     train_iterative_vae_pipeline,
     train_one_vae,
-    
     # Outlier detection
     find_threshold_kde,
     detect_outliers_kde,
     find_cluster_and_classify,
-    
     # Visualization
     plot_history,
     plot_projected_latent_space,
-    plot_random_reconstructions
+    plot_random_reconstructions,
 )
 
 # SCINet - Science Network for Time Series
@@ -109,28 +96,24 @@ from .project_scinet import (
     SciNetEncoder,
     QuestionDecoder,
     PendulumNet,
-    
     # Configuration
     config as scinet_config,
-    
     # Dataset utilities
     build_dataset,
     PendulumDataset,
-    
     # Prediction and evaluation
     make_one_prediction,
     make_timeserie_prediction,
     plot_one_prediction,
-    
     # Latent space analysis
     get_latent_activations,
-    plot_3d_latent_activations
+    plot_3d_latent_activations,
 )
 
 # Submodule imports for advanced usage
 from . import ml_tools
 from . import project_mscred
-from . import project_vae  
+from . import project_vae
 from . import project_scinet
 from . import data_downloading
 
@@ -138,19 +121,17 @@ from . import data_downloading
 __all__ = [
     # Package metadata
     "__version__",
-    "__author__", 
+    "__author__",
     "__email__",
-    
     # Submodules
     "ml_tools",
-    "project_mscred", 
+    "project_mscred",
     "project_vae",
     "project_scinet",
     "data_downloading",
-    
     # ML Tools - Core Utilities
     "print_torch_info",
-    "select_torch_device", 
+    "select_torch_device",
     "seed_everything",
     "normalize_batch",
     "denormalize_batch",
@@ -158,10 +139,9 @@ __all__ = [
     "project_umap",
     "plot_projection",
     "print_model_parameters",
-    
     # MSCRED - Anomaly Detection
     "MSCRED",
-    "ConvLSTM", 
+    "ConvLSTM",
     "mscred_config",
     "TimeSeriesDataset",
     "create_data_loaders",
@@ -172,13 +152,12 @@ __all__ = [
     "find_anomaly_threshold",
     "detect_anomalies_all",
     "compute_residuals",
-    
     # VAE - Outlier Detection
     "LSTMBetaVAE",
     "LengthAwareLSTMEncoder",
     "LengthAwareLSTMDecoder",
     "vae_config",
-    "MultivariateTimeSerieDataset", 
+    "MultivariateTimeSerieDataset",
     "create_datasets",
     "train_iterative_vae_pipeline",
     "train_one_vae",
@@ -188,17 +167,16 @@ __all__ = [
     "plot_history",
     "plot_projected_latent_space",
     "plot_random_reconstructions",
-    
     # SCINet - Time Series Prediction
     "SciNetEncoder",
     "QuestionDecoder",
     "PendulumNet",
     "scinet_config",
     "build_dataset",
-    "PendulumDataset", 
+    "PendulumDataset",
     "make_one_prediction",
     "make_timeserie_prediction",
     "plot_one_prediction",
     "get_latent_activations",
-    "plot_3d_latent_activations"
+    "plot_3d_latent_activations",
 ]

@@ -7,7 +7,9 @@ import pathlib
 import tqdm
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
-from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import ip_filter
+from magnetics_diagnostic_analysis.data_downloading.steady_state_filtering import (
+    ip_filter,
+)
 
 
 def shot_list(campaign: str = "", quality: bool = None) -> list[int]:
@@ -23,17 +25,19 @@ def shot_list(campaign: str = "", quality: bool = None) -> list[int]:
     """
     URL = "https://mastapp.site"
     if campaign == "":
-        shots_df = pd.read_parquet(f'{URL}/parquet/level2/shots')
+        shots_df = pd.read_parquet(f"{URL}/parquet/level2/shots")
     else:
-        shots_df = pd.read_parquet(f'{URL}/parquet/level2/shots?filters=campaign$eq:{campaign}')
-    
-    shots_df['shot_label'] = (shots_df['cpf_useful'] == 1).astype(int)
+        shots_df = pd.read_parquet(
+            f"{URL}/parquet/level2/shots?filters=campaign$eq:{campaign}"
+        )
+
+    shots_df["shot_label"] = (shots_df["cpf_useful"] == 1).astype(int)
     if quality is None:
-        return shots_df['shot_id'].tolist()
+        return shots_df["shot_id"].tolist()
     elif quality == True:
-        return shots_df.loc[shots_df['shot_label'] == 1, 'shot_id'].tolist()
+        return shots_df.loc[shots_df["shot_label"] == 1, "shot_id"].tolist()
     else:
-        return shots_df.loc[shots_df['shot_label'] == 0, 'shot_id'].tolist()
+        return shots_df.loc[shots_df["shot_label"] == 0, "shot_id"].tolist()
 
 
 def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
@@ -49,13 +53,13 @@ def to_dask(shot: int, group: str, level: int = 2) -> xr.Dataset:
         xr.Dataset: The Dask Dataset for the specified shot and group.
     """
     return xr.open_zarr(
-        f"https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr",
-        group=group
+        f"https://s3.echo.stfc.ac.uk/mast/level{level}/shots/{shot}.zarr", group=group
     )
 
 
-
-def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1) -> xr.Dataset:
+def retry_to_dask(
+    shot_id: int, group: str, retries: int = 5, delay: int = 1
+) -> xr.Dataset:
     """
     Retry loading a shot's data as a Dask Dataset with exponential backoff.
 
@@ -74,20 +78,27 @@ def retry_to_dask(shot_id: int, group: str, retries: int = 5, delay: int = 1) ->
             return to_dask(shot_id, group)
         except Exception as e:
             if attempt < retries - 1:
-                print(f"Retrying connection to {shot_id} in group {group} (attempt {attempt + 1}/{retries})")
+                print(
+                    f"Retrying connection to {shot_id} in group {group} (attempt {attempt + 1}/{retries})"
+                )
                 time.sleep(delay)
             else:
                 raise e
-            
 
-def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
+
+def build_level_2_data_per_shot(
+    shots: list[int],
+    groups: list[str],
+    steady_state: bool = False,
+    verbose: bool = False,
+) -> xr.Dataset:
     """
     Warning: This function is deprecated and will be removed in future versions.
     The aim was to build a dataset with shot_id as a dimension, but aligning problems have occurred.
     Use `build_level_2_data_all_shot` instead.
     ==============
 
-    
+
     Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
 
     Args:
@@ -106,16 +117,16 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
         except (IndexError, KeyError):
             print(f"Issue on 'summary' for shot {shot}")
             continue
-        ip = summary['ip']
-        time_ip = summary['time']
+        ip = summary["ip"]
+        time_ip = summary["time"]
 
         if steady_state:
-            mask, _, _ = ip_filter(ip.values, filter='default', min_current=4.e4)
+            mask, _, _ = ip_filter(ip.values, filter="default", min_current=4.0e4)
             time_ref = time_ip[mask]
         else:
             time_ref = time_ip
 
-        time_dim_name = f"time_{shot}"      # Create a unique name for a given shot
+        time_dim_name = f"time_{shot}"  # Create a unique name for a given shot
         shot_signals = []
         if verbose:
             print("time_dim_name = ", time_dim_name, "\n")
@@ -135,13 +146,13 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
 
             interpolated_vars = {}
             other_time_coords = set()
-            
+
             for var_name, da in data.data_vars.items():
                 if verbose:
                     print(f"Processing variable: {var_name}")
                 # Find the time dimension (could be "time", "time_saddle", etc.)
                 time_dim = next((d for d in da.dims if d.startswith("time")), None)
-                
+
                 if time_dim is not None:
                     da_interp = da.interp({time_dim: time_ref})
                     other_time_coords.add(time_dim)
@@ -158,14 +169,14 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
                 if coord in cleaned.coords:
                     cleaned = cleaned.drop_vars(coord)
             # Final step: rename "time" to a unique name for this shot
-            cleaned = cleaned.swap_dims({'time': time_dim_name})
+            cleaned = cleaned.swap_dims({"time": time_dim_name})
             cleaned = cleaned.assign_coords({time_dim_name: time_ref.values})
             cleaned = cleaned.transpose(time_dim_name, ...)
             if verbose:
                 print(cleaned)
 
             shot_signals.append(cleaned)
-            
+
         if not shot_signals:
             continue
 
@@ -180,11 +191,16 @@ def build_level_2_data_per_shot(shots: list[int], groups: list[str], steady_stat
 
     final = xr.concat(dataset, dim="shot_id", coords="minimal")
     print("dataset ok")
-    
+
     return final
 
 
-def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_state: bool = False, verbose: bool = False) -> xr.Dataset:
+def build_level_2_data_all_shots(
+    shots: list[int],
+    groups: list[str],
+    steady_state: bool = False,
+    verbose: bool = False,
+) -> xr.Dataset:
     """
     Retrieve specified groups of diagnostics from shots in the M9 campaign during steady state or not.
 
@@ -198,17 +214,19 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_sta
         xr.Dataset: An xarray Dataset containing the requested diagnostic data.
     """
     dataset = []
-    for shot_index, shot_id in tqdm.tqdm(enumerate(shots), desc="Loading shots", total=len(shots)):
+    for shot_index, shot_id in tqdm.tqdm(
+        enumerate(shots), desc="Loading shots", total=len(shots)
+    ):
         try:
             ref = retry_to_dask(shot_id, "summary")
         except (IndexError, KeyError):
             print(f"Issue on 'summary' for shot {shot_id}")
             continue
-        ip_ref = ref['ip']
+        ip_ref = ref["ip"]
         time = ref.time
 
         if steady_state:
-            mask, _, _ = ip_filter(ip_ref.values, filter='default', min_current=4.e4)
+            mask, _, _ = ip_filter(ip_ref.values, filter="default", min_current=4.0e4)
             time_ref = time[mask]
         else:
             time_ref = time
@@ -230,19 +248,21 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_sta
             if group == "summary":
                 # If the group is summary, we do not need the 'ip' variable. Else issue with ip alignment in magnetics.
                 data = data.drop_vars("ip", errors="ignore")
-            
+
             other_times = set()
             for var in data.data_vars:
                 if verbose:
                     print(f"Processing variable: {var}")
-                time_dim = next((dim for dim in data[var].dims if dim.startswith('time')), 'time')
+                time_dim = next(
+                    (dim for dim in data[var].dims if dim.startswith("time")), "time"
+                )
 
                 if time_dim != "time":
                     other_times.add(time_dim)
-                data[var] = data[var].interp({time_dim: time_ref})               
+                data[var] = data[var].interp({time_dim: time_ref})
                 data[var] = data[var].transpose("time", ...)
                 data[var].attrs |= {"group": group}
-                #data[var].attrs |= {"timestamp": requests.get(f'https://mastapp.site/json/shots/{shot}').json()["timestamp"]}
+                # data[var].attrs |= {"timestamp": requests.get(f'https://mastapp.site/json/shots/{shot}').json()["timestamp"]}
                 # Timestamp goes away with concat, so we don't add it here
 
             data = data.drop_vars(other_times)
@@ -252,16 +272,30 @@ def build_level_2_data_all_shots(shots: list[int], groups: list[str], steady_sta
         signal["shot_index"] = "time", shot_index * np.ones(len(time_ref), int)
         dataset.append(signal)
 
-    final = xr.concat(dataset, "time", join="override", coords="minimal", combine_attrs="drop_conflicts")           # coords="minimal" deletes all coords that are not in all datasets
+    final = xr.concat(
+        dataset,
+        "time",
+        join="override",
+        coords="minimal",
+        combine_attrs="drop_conflicts",
+    )  # coords="minimal" deletes all coords that are not in all datasets
     print("dataset ok")
 
     return final
 
 
-
-def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: list[int], groups: list[str], steady_state: bool, random_seed: int = 42, verbose: bool = False) -> None:
+def load_train_test(
+    file_path: str,
+    suffix: str,
+    train_test_rate: float,
+    shots: list[int],
+    groups: list[str],
+    steady_state: bool,
+    random_seed: int = 42,
+    verbose: bool = False,
+) -> None:
     """
-    Warning: This function is deprecated and will be removed in future versions. 
+    Warning: This function is deprecated and will be removed in future versions.
              It was for directly loading train and test datasets. But we now split later in the workflow.
     Use `load_data` instead.
     ==============
@@ -281,7 +315,9 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
     Returns:
         None
     """
-    assert 0.05 < train_test_rate < 0.95, "train_test_rate must be between 0.05 and 0.95"
+    assert (
+        0.05 < train_test_rate < 0.95
+    ), "train_test_rate must be between 0.05 and 0.95"
 
     path = pathlib.Path().absolute() / file_path
     path.mkdir(exist_ok=True)
@@ -295,19 +331,19 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
     except FileNotFoundError:
         rng = np.random.default_rng(random_seed)
         rng.shuffle(shots)
-        
-        split_id = int(len(shots) * (1-train_test_rate))
+
+        split_id = int(len(shots) * (1 - train_test_rate))
         split_ids = {
             "train": shots[:split_id],
             "test": shots[split_id:],
         }
-        #dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, steady_state=steady_state) for mode, shot_ids in split_ids.items()}
-        dataset = {mode: build_level_2_data_all_shots(
-            shot_ids, 
-            groups=groups, 
-            steady_state=steady_state,
-            verbose=verbose
-            ) for mode, shot_ids in split_ids.items()}
+        # dataset = {mode: build_level_2_data_all_shots(shots=shot_ids, groups=groups, steady_state=steady_state) for mode, shot_ids in split_ids.items()}
+        dataset = {
+            mode: build_level_2_data_all_shots(
+                shot_ids, groups=groups, steady_state=steady_state, verbose=verbose
+            )
+            for mode, shot_ids in split_ids.items()
+        }
         print("Saving to netCDF...")
         dataset["train"].to_netcdf(filename_train)
         dataset["test"].to_netcdf(filename_test)
@@ -316,7 +352,9 @@ def load_train_test(file_path: str, suffix: str, train_test_rate: float, shots: 
     return None
 
 
-def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: bool = False) -> None:
+def load_data(
+    shots: list[int], groups: list[str], steady_state: bool, verbose: bool = False
+) -> None:
     """
     Load data from cache or build it if not available.
 
@@ -341,12 +379,9 @@ def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: 
         # rng = np.random.default_rng(random_seed)
         # rng.shuffle(shots)
         pass
-        
+
         dataset = build_level_2_data_all_shots(
-            shots, 
-            groups=groups, 
-            steady_state=steady_state,
-            verbose=verbose
+            shots, groups=groups, steady_state=steady_state, verbose=verbose
         )
         print("Saving to netCDF...")
         dataset.to_netcdf(filename_data)
@@ -355,33 +390,32 @@ def load_data(shots: list[int], groups: list[str], steady_state: bool, verbose: 
     return None
 
 
-
 if __name__ == "__main__":
 
-    n_samples = 12       # Number of shots to load
+    n_samples = 12  # Number of shots to load
     random_seed = config.RANDOM_SEED
     campaign_number = ""
-    #shots = shot_list(campaign=campaign_number, quality=True)
-    #rd.seed(random_seed)
-    #rd.shuffle(shots)
-    #shots = shots[:n_samples]
-    
+    # shots = shot_list(campaign=campaign_number, quality=True)
+    # rd.seed(random_seed)
+    # rd.shuffle(shots)
+    # shots = shots[:n_samples]
+
     shots = [15585, 15212, 15010, 14998, 30410, 30418, 30420]
     print("Chosen shots: \n", shots)
     print("Type of shots: ", type(shots))
 
     load_data(
-        shots=shots, 
-        groups=config.GROUPS, 
-        steady_state=config.STEADY_STATE, 
-        verbose=False
-        )
-    
+        shots=shots,
+        groups=config.GROUPS,
+        steady_state=config.STEADY_STATE,
+        verbose=False,
+    )
+
     print("Data loading completed.\n")
-    
+
     path = config.DIR_RAW_DATA / config.DATA_FILE_NAME
-    with (xr.open_dataset(path) as train):
-        #subset = train.sel(shot_id=shots[])
+    with xr.open_dataset(path) as train:
+        # subset = train.sel(shot_id=shots[])
         data = train.load()
 
     print("\nDataset loaded successfully.")
@@ -392,5 +426,3 @@ if __name__ == "__main__":
     print("===============")
     print(data["coil_current"].attrs)
     print("===============")
-
-    

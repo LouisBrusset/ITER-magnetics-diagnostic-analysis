@@ -1,5 +1,6 @@
 import torch
 
+
 def print_torch_info():
     print("\nTorch version? ", torch.__version__)
     print("Cuda?          ", torch.cuda.is_available())
@@ -36,7 +37,9 @@ def select_torch_device(temporal_dim: str = "sequential") -> torch.device:
             elif temporal_dim == "parallel":
                 device = torch.device("cuda")
             else:
-                raise ValueError("temporal_dim must be either 'sequential' or 'parallel'")
+                raise ValueError(
+                    "temporal_dim must be either 'sequential' or 'parallel'"
+                )
         else:
             device = torch.device("cuda")
     else:
@@ -48,8 +51,7 @@ def select_torch_device(temporal_dim: str = "sequential") -> torch.device:
 if __name__ == "__main__":
 
     print_torch_info()
-    
+
     device = select_torch_device()
 
     print(f"Using device: {device}")
-

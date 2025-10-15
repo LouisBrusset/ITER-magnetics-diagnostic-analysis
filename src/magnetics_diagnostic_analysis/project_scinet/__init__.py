@@ -20,24 +20,17 @@ __version__ = "0.1.0"
 __author__ = "Louis Brusset"
 
 # Import main model classes
-from .model.scinet import (
-    SciNetEncoder,
-    QuestionDecoder, 
-    PendulumNet
-)
+from .model.scinet import SciNetEncoder, QuestionDecoder, PendulumNet
 
 # Import dataset utilities
-from .utils.build_dataset import (
-    build_dataset,
-    PendulumDataset
-)
+from .utils.build_dataset import build_dataset, PendulumDataset
 
 # Import testing and evaluation functions
 from .utils.test_scinet import (
     make_one_prediction,
     make_timeserie_prediction,
     plot_one_prediction,
-    plot_timeserie_prediction
+    plot_timeserie_prediction,
 )
 
 # Import visualization tools
@@ -45,7 +38,7 @@ from .utils.plot_latent_activations import (
     load_trained_model,
     get_one_latent_activation,
     get_latent_activations,
-    plot_3d_latent_activations
+    plot_3d_latent_activations,
 )
 
 # Import configuration
@@ -54,25 +47,21 @@ from .setting_scinet import config
 __all__ = [
     # Model architectures
     "SciNetEncoder",
-    "QuestionDecoder", 
+    "QuestionDecoder",
     "PendulumNet",
-    
     # Dataset utilities
     "build_dataset",
     "PendulumDataset",
-    
     # Testing and evaluation
     "make_one_prediction",
     "make_timeserie_prediction",
     "plot_one_prediction",
     "plot_timeserie_prediction",
-    
     # Visualization tools
     "load_trained_model",
-    "get_one_latent_activation", 
+    "get_one_latent_activation",
     "get_latent_activations",
     "plot_3d_latent_activations",
-    
     # Configuration
-    "config"
+    "config",
 ]

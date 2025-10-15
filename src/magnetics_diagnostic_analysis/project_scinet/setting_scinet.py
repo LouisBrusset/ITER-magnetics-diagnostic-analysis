@@ -1,13 +1,17 @@
 from pathlib import Path
+
 # import yaml
 
 from magnetics_diagnostic_analysis.ml_tools.random_seed import seed_everything
-from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
+from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import (
+    select_torch_device,
+)
+
 
 class Config:
     """Global variables configuration"""
 
-    ##########################################    
+    ##########################################
     ### Paths
     SUFFIX = "scinet"
     DIR_DATA = Path(__file__).absolute().parent.parent.parent.parent / "data"
@@ -16,18 +20,28 @@ class Config:
     # DIR_PREPROCESSED_DATA = DIR_DATA / f"preprocessed/{SUFFIX}"
     # DIR_PROCESSED_DATA = DIR_DATA / f"processed/{SUFFIX}"
     DIR_PARAMS_CHECKPOINTS = Path(__file__).absolute().parent / f"checkpoints"
-    DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
-    DIR_FIGURES = Path(__file__).absolute().parent.parent.parent.parent / f"results/figures/{SUFFIX}"
+    DIR_MODEL_PARAMS = (
+        Path(__file__).absolute().parent.parent.parent.parent
+        / f"results/model_params/{SUFFIX}"
+    )
+    DIR_FIGURES = (
+        Path(__file__).absolute().parent.parent.parent.parent
+        / f"results/figures/{SUFFIX}"
+    )
     # Check and create directories if they do not exist
-    for directory in [DIR_DATA, DIR_SYNTHETIC_DATA, DIR_PARAMS_CHECKPOINTS, DIR_MODEL_PARAMS, DIR_FIGURES]:
+    for directory in [
+        DIR_DATA,
+        DIR_SYNTHETIC_DATA,
+        DIR_PARAMS_CHECKPOINTS,
+        DIR_MODEL_PARAMS,
+        DIR_FIGURES,
+    ]:
         directory.mkdir(parents=True, exist_ok=True)
-
 
     ### PyTorch device & set seed for reproducibility
     DEVICE = select_torch_device(temporal_dim="parallel")
     SEED = 42
     seed_everything(SEED)
-
 
     ### Data parameters
     N_SAMPLES = 50000
@@ -36,10 +50,8 @@ class Config:
     MAXTIME = 10.0
     TIMESTEPS = 100
 
-
     ### DataLoader parameters
     TRAIN_VALID_SPLIT = 0.8
-
 
     ### SCINET architecture
     M_INPUT_SIZE = TIMESTEPS
@@ -53,7 +65,7 @@ class Config:
     BATCH_SIZE_TRAIN = 512
     BATCH_SIZE_VALID = 512
     FIRST_LEARNING_RATE = 3e-4
-    WEIGHT_DECAY = 1e-5     # if needed
+    WEIGHT_DECAY = 1e-5  # if needed
     KLD_BETA = 0.003
 
     ### Train parameters
@@ -66,15 +78,10 @@ class Config:
     LRS_MIN_LR = 1e-7
     LRS_MIN_DELTA = 1e-4
 
-
-
-
     ### Data scrapping from MAST API
 
     ### Others
     BEST_MODEL_NAME = "pendulum_scinet_final"
-
-   
 
     # Method to update parameters
     @classmethod
@@ -82,6 +89,7 @@ class Config:
         for key, value in kwargs.items():
             if hasattr(cls, key):
                 setattr(cls, key, value)
+
 
 # Global instance
 config = Config()

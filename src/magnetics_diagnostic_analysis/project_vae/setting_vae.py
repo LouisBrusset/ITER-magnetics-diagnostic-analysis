@@ -1,8 +1,12 @@
 from pathlib import Path
+
 # import yaml
 
 from magnetics_diagnostic_analysis.ml_tools.random_seed import seed_everything
-from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import select_torch_device
+from magnetics_diagnostic_analysis.ml_tools.pytorch_device_selection import (
+    select_torch_device,
+)
+
 
 class Config:
     """Global variables configuration"""
@@ -10,16 +14,29 @@ class Config:
     ### Useful variables
     train_test_rates = 0.25
 
-    ##########################################    
+    ##########################################
     ### Paths
     SUFFIX = "vae"
     DIR_DATA = Path(__file__).absolute().parent.parent.parent.parent / "data"
     DIR_RAW_DATA = DIR_DATA / f"raw"
     DIR_PREPROCESSED_DATA = DIR_DATA / f"preprocessed/{SUFFIX}"
     DIR_PROCESSED_DATA = DIR_DATA / f"processed/{SUFFIX}"
-    DIR_MODEL_PARAMS = Path(__file__).absolute().parent.parent.parent.parent / f"results/model_params/{SUFFIX}"
-    DIR_FIGURES = Path(__file__).absolute().parent.parent.parent.parent / f"results/figures/{SUFFIX}"
-    for direction in [DIR_DATA, DIR_RAW_DATA, DIR_PREPROCESSED_DATA, DIR_PROCESSED_DATA, DIR_MODEL_PARAMS, DIR_FIGURES]:
+    DIR_MODEL_PARAMS = (
+        Path(__file__).absolute().parent.parent.parent.parent
+        / f"results/model_params/{SUFFIX}"
+    )
+    DIR_FIGURES = (
+        Path(__file__).absolute().parent.parent.parent.parent
+        / f"results/figures/{SUFFIX}"
+    )
+    for direction in [
+        DIR_DATA,
+        DIR_RAW_DATA,
+        DIR_PREPROCESSED_DATA,
+        DIR_PROCESSED_DATA,
+        DIR_MODEL_PARAMS,
+        DIR_FIGURES,
+    ]:
         direction.mkdir(parents=True, exist_ok=True)
 
     ### PyTorch device
@@ -27,14 +44,16 @@ class Config:
     SEED = 42
 
     ### Important parameters
-    MULTIVARIATE = False    # Whether to use multivariate data or not
-    MAX_LENGTH = 3000       # Max length of the sequences (in time steps)
-    N_SUBSAMPLE = 1         # Factor to subsample the data
-    N_CHAN_TO_KEEP = None   # Number of channels to keep if multivariate
-    VAR_NAME = "ip"         # Variable name to use if univariate
+    MULTIVARIATE = False  # Whether to use multivariate data or not
+    MAX_LENGTH = 3000  # Max length of the sequences (in time steps)
+    N_SUBSAMPLE = 1  # Factor to subsample the data
+    N_CHAN_TO_KEEP = None  # Number of channels to keep if multivariate
+    VAR_NAME = "ip"  # Variable name to use if univariate
 
     DATA_NUMBER = 12877819  # Total number of data points to consider
-    SET_SEPARATION =  int(DATA_NUMBER * (1-train_test_rates))  # Train & Test split indice
+    SET_SEPARATION = int(
+        DATA_NUMBER * (1 - train_test_rates)
+    )  # Train & Test split indice
 
     ### VAE architecture
     LATENT_DIM = 64
@@ -46,7 +65,7 @@ class Config:
     ### Hyperparameters
     BATCH_SIZE = 32
     FIRST_LEARNING_RATE = 0.0003
-    WEIGHT_DECAY = 1e-5     # if needed
+    WEIGHT_DECAY = 1e-5  # if needed
 
     ### Train parameters
     N_ITERATIONS = 1
@@ -74,10 +93,10 @@ class Config:
             if hasattr(cls, key):
                 setattr(cls, key, value)
 
+
 # Global instance
 config = Config()
 
 
-
 # update data number
-#config.update(DATA_NUMBER=10000000)
+# config.update(DATA_NUMBER=10000000)

@@ -1,7 +1,7 @@
 """
 Data Downloading Module
 
-Comprehensive utilities for downloading, loading, and preprocessing experimental data from 
+Comprehensive utilities for downloading, loading, and preprocessing experimental data from
 the MAST (Mega Amp Spherical Tokamak) experiment database.
 
 This module serves as the data foundation for all machine learning projects in the package,
@@ -28,20 +28,18 @@ from .data_downloading import (
     to_dask,
     retry_to_dask,
     build_level_2_data_all_shots,
-    load_data
+    load_data,
 )
 
 # Import steady state filtering utilities
-from .steady_state_filtering import (
-    ip_filter
-)
+from .steady_state_filtering import ip_filter
 
 # Import data washing and cleaning functions
 from .data_washing import (
     print_dataset_info,
     filter_xr_dataset_channels,
     impute_to_zero,
-    clean_data
+    clean_data,
 )
 
 __all__ = [
@@ -51,14 +49,11 @@ __all__ = [
     "retry_to_dask",
     "build_level_2_data_all_shots",
     "load_data",
-    
     # Steady state filtering
     "ip_filter",
-    
     # Data washing and cleaning
     "print_dataset_info",
     "filter_xr_dataset_channels",
     "impute_to_zero",
-    "clean_data"
+    "clean_data",
 ]
-

@@ -11,7 +11,7 @@ def print_dataset_info(ds: xr.Dataset) -> None:
     Args:
         ds (xr.Dataset): The xarray Dataset to inspect.
     """
-    print(f"{'\nVariable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
+    print(f"\n{'Variable':<40} {'Shape':<20} {'Dims':<55} {'NaN Count':<10}")
     for var in ds.data_vars:
         shape = ds[var].shape
         dims = ds[var].dims

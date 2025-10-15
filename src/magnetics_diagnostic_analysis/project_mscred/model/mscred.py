@@ -7,10 +7,7 @@ from magnetics_diagnostic_analysis.project_mscred.model.convlstm import ConvLSTM
 
 
 ## Attention mechanism for Conv_LSTM output
-def attention(
-        ConvLstm_out: torch.Tensor,
-        rescale_factor: float = 5.0
-        ) -> torch.Tensor:
+def attention(ConvLstm_out: torch.Tensor, rescale_factor: float = 5.0) -> torch.Tensor:
     """
     Attention mechanism for ConvLSTM output (Vectorized)
     This implementation build a causal "by construction" attention mechanism. "By construction" because we only give passed informations.
@@ -23,21 +20,21 @@ def attention(
         Tensor: The output after applying the attention mechanism. Shape (channels, height, width)
 
     Nota bene:
-        The rescale_factor is used to normalize the similarity scores after the dot product of the 
+        The rescale_factor is used to normalize the similarity scores after the dot product of the
         hidden states and before the softmax function.
         The value of 5 is empirically determined.
-        This value is a compromise between producing uniform attention weights (large rescale_factor = all weights are the same order) 
+        This value is a compromise between producing uniform attention weights (large rescale_factor = all weights are the same order)
         and producing a sharp distribution in weights (small rescale_factor = one weight dominates) with the softmax function.
-    
-    Post Scriptum: 
+
+    Post Scriptum:
         In the future, we could replace this attention mechanism with a more sophisticated one, such as a query-key-value attention mechanism.
     """
     assert rescale_factor > 0, "Rescale factor must be positive and non zero"
 
     last_step = ConvLstm_out[-1]
-    similarities = torch.einsum('tchw,chw->t', ConvLstm_out, last_step) / rescale_factor
+    similarities = torch.einsum("tchw,chw->t", ConvLstm_out, last_step) / rescale_factor
     attention_weights = torch.softmax(similarities, dim=0)
-    ConvLstm_out_weighted = torch.einsum('t,tchw->chw', attention_weights, ConvLstm_out)
+    ConvLstm_out_weighted = torch.einsum("t,tchw->chw", attention_weights, ConvLstm_out)
     return ConvLstm_out_weighted
 
 
@@ -52,11 +49,12 @@ class CnnEncoder(nn.Module):
             (batch_size, 128, height//4, width//4) after conv3 (stride 2)
             (batch_size, 256, height//8, width//8) after conv4 (stride 2)
     """
+
     def __init__(
-            self, 
-            in_channels_encoder: int = 3, 
-            deep_channel_sizes: list[int] = [32, 64, 128, 256]
-            ) -> None:
+        self,
+        in_channels_encoder: int = 3,
+        deep_channel_sizes: list[int] = [32, 64, 128, 256],
+    ) -> None:
         """
         We have chosen SELU() activation function for its self-normalizing properties.
 
@@ -69,29 +67,42 @@ class CnnEncoder(nn.Module):
         """
         super().__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels_encoder, 
-                      out_channels=deep_channel_sizes[0], 
-                      kernel_size=3, stride=(1, 1), padding=1),
-            nn.SELU()
+            nn.Conv2d(
+                in_channels=in_channels_encoder,
+                out_channels=deep_channel_sizes[0],
+                kernel_size=3,
+                stride=(1, 1),
+                padding=1,
+            ),
+            nn.SELU(),
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels=deep_channel_sizes[0], 
-                      out_channels=deep_channel_sizes[1], 
-                      kernel_size=3, stride=(2, 2), padding=1),
-            nn.SELU()
-        )    
+            nn.Conv2d(
+                in_channels=deep_channel_sizes[0],
+                out_channels=deep_channel_sizes[1],
+                kernel_size=3,
+                stride=(2, 2),
+                padding=1,
+            ),
+            nn.SELU(),
+        )
         self.conv3 = nn.Sequential(
-            nn.Conv2d(in_channels=deep_channel_sizes[1], 
-                      out_channels=deep_channel_sizes[2], 
-                      kernel_size=2, stride=(2, 2), padding=0),
-            nn.SELU()
-        )   
+            nn.Conv2d(
+                in_channels=deep_channel_sizes[1],
+                out_channels=deep_channel_sizes[2],
+                kernel_size=2,
+                stride=(2, 2),
+                padding=0,
+            ),
+            nn.SELU(),
+        )
         # self.conv4 = nn.Sequential(
-        #     nn.Conv2d(in_channels=deep_channel_sizes[2], 
-        #               out_channels=deep_channel_sizes[3], 
+        #     nn.Conv2d(in_channels=deep_channel_sizes[2],
+        #               out_channels=deep_channel_sizes[3],
         #               kernel_size=2, stride=(2, 2), padding=0),
         #     nn.SELU()
         # )
+
     def forward(self, X: torch.Tensor) -> tuple[torch.Tensor]:
         """
         Forward pass for the CNN encoder
@@ -106,7 +117,8 @@ class CnnEncoder(nn.Module):
         conv2_out = self.conv2(conv1_out)
         conv3_out = self.conv3(conv2_out)
         # conv4_out = self.conv4(conv3_out)
-        return conv1_out, conv2_out, conv3_out#, conv4_out
+        return conv1_out, conv2_out, conv3_out  # , conv4_out
+
 
 class Conv_LSTM(nn.Module):
     """
@@ -119,29 +131,39 @@ class Conv_LSTM(nn.Module):
         - _init_queue: Initializes the internal queues for the Conv_LSTM module.
         - _update_queues: Updates the internal queues with the latest CnnEncoder output.
     """
+
     def __init__(
-            self,
-            deep_channel_sizes: list[int] = [32, 64, 128, 256],
-            num_layers: int = 1,
-            n_timesteps: int = 5, 
-            n_effective_timesteps: list = [1, 2, 3, 4]
-            ) -> None:
+        self,
+        deep_channel_sizes: list[int] = [32, 64, 128, 256],
+        num_layers: int = 1,
+        n_timesteps: int = 5,
+        n_effective_timesteps: list = [1, 2, 3, 4],
+    ) -> None:
         super().__init__()
-        self.conv1_lstm = ConvLSTM(input_channels=deep_channel_sizes[0], 
-                                   hidden_channels=[deep_channel_sizes[0]]*num_layers, 
-                                   kernel_size=3, 
-                                   step=n_timesteps, effective_step=n_effective_timesteps)
-        self.conv2_lstm = ConvLSTM(input_channels=deep_channel_sizes[1], 
-                                   hidden_channels=[deep_channel_sizes[1]]*num_layers, 
-                                   kernel_size=3, 
-                                   step=n_timesteps, effective_step=n_effective_timesteps)
-        self.conv3_lstm = ConvLSTM(input_channels=deep_channel_sizes[2], 
-                                   hidden_channels=[deep_channel_sizes[2]]*num_layers, 
-                                   kernel_size=3, 
-                                   step=n_timesteps, effective_step=n_effective_timesteps)
-        # self.conv4_lstm = ConvLSTM(input_channels=deep_channel_sizes[3], 
-        #                            hidden_channels=[deep_channel_sizes[3]]*num_layers, 
-        #                            kernel_size=3, 
+        self.conv1_lstm = ConvLSTM(
+            input_channels=deep_channel_sizes[0],
+            hidden_channels=[deep_channel_sizes[0]] * num_layers,
+            kernel_size=3,
+            step=n_timesteps,
+            effective_step=n_effective_timesteps,
+        )
+        self.conv2_lstm = ConvLSTM(
+            input_channels=deep_channel_sizes[1],
+            hidden_channels=[deep_channel_sizes[1]] * num_layers,
+            kernel_size=3,
+            step=n_timesteps,
+            effective_step=n_effective_timesteps,
+        )
+        self.conv3_lstm = ConvLSTM(
+            input_channels=deep_channel_sizes[2],
+            hidden_channels=[deep_channel_sizes[2]] * num_layers,
+            kernel_size=3,
+            step=n_timesteps,
+            effective_step=n_effective_timesteps,
+        )
+        # self.conv4_lstm = ConvLSTM(input_channels=deep_channel_sizes[3],
+        #                            hidden_channels=[deep_channel_sizes[3]]*num_layers,
+        #                            kernel_size=3,
         #                            step=n_timesteps, effective_step=n_effective_timesteps)
 
         self.n_timesteps = n_timesteps
@@ -151,12 +173,8 @@ class Conv_LSTM(nn.Module):
         # self.queue4 = deque(maxlen=n_timestep)
 
     def _init_queue(
-            self, 
-            queue: deque, 
-            in_shape: tuple, 
-            steps: int,
-            device: str
-            ) -> None:
+        self, queue: deque, in_shape: tuple, steps: int, device: str
+    ) -> None:
         """
         Initialize the queues with zeros for the first `steps - 1` timesteps.
 
@@ -174,7 +192,13 @@ class Conv_LSTM(nn.Module):
             # resize to be shape [steps, C, H, W]
             queue.append(torch.zeros(in_shape[1:], device=device, requires_grad=False))
 
-    def _update_queues(self, x_conv1_out: torch.Tensor, x_conv2_out: torch.Tensor, x_conv3_out: torch.Tensor, x_conv4_out: torch.Tensor = 0) -> None:
+    def _update_queues(
+        self,
+        x_conv1_out: torch.Tensor,
+        x_conv2_out: torch.Tensor,
+        x_conv3_out: torch.Tensor,
+        x_conv4_out: torch.Tensor = 0,
+    ) -> None:
         """
         Update the queues with the latest CnnEncoder output with this scheme:
             - Theoretically, in the last queue, all tensors are detached form autograd, except for the most recent one.
@@ -188,16 +212,22 @@ class Conv_LSTM(nn.Module):
             x_convi_out (torch.Tensor): Output from the i_th CnnEncoder layer.
         """
         # resize to be shape [steps, C, H, W]
-        assert len(self.queue1) == self.n_timesteps, "Queue length must match n_timesteps"
-        assert len(self.queue2) == self.n_timesteps, "Queue length must match n_timesteps"
-        assert len(self.queue3) == self.n_timesteps, "Queue length must match n_timesteps"
+        assert (
+            len(self.queue1) == self.n_timesteps
+        ), "Queue length must match n_timesteps"
+        assert (
+            len(self.queue2) == self.n_timesteps
+        ), "Queue length must match n_timesteps"
+        assert (
+            len(self.queue3) == self.n_timesteps
+        ), "Queue length must match n_timesteps"
         # assert len(self.queue4) == self.n_timesteps, "Queue length must match n_timesteps"
 
         old_grad_tensor1 = self.queue1.pop()
         old_grad_tensor2 = self.queue2.pop()
         old_grad_tensor3 = self.queue3.pop()
         # old_grad_tensor4 = self.queue4.pop()
-        
+
         old_grad_tensor1 = old_grad_tensor1.detach()
         old_grad_tensor2 = old_grad_tensor2.detach()
         old_grad_tensor3 = old_grad_tensor3.detach()
@@ -213,7 +243,13 @@ class Conv_LSTM(nn.Module):
         self.queue3.append(x_conv3_out)
         # self.queue4.append(x_conv4_out)
 
-    def forward(self, conv1_out: torch.Tensor, conv2_out: torch.Tensor, conv3_out: torch.Tensor, conv4_out: torch.Tensor = 0) -> tuple[torch.Tensor]:
+    def forward(
+        self,
+        conv1_out: torch.Tensor,
+        conv2_out: torch.Tensor,
+        conv3_out: torch.Tensor,
+        conv4_out: torch.Tensor = 0,
+    ) -> tuple[torch.Tensor]:
         """
         ConvLSTM forward pass
         convi_lstm_out is a tuple (outputs, (x, new_c))
@@ -231,16 +267,24 @@ class Conv_LSTM(nn.Module):
         Returns:
             Tuple[torch.Tensor]: Output tensors from each ConvLSTM layer
         """
-        for queue, convX in [(self.queue1, conv1_out), (self.queue2, conv2_out), (self.queue3, conv3_out)]:
+        for queue, convX in [
+            (self.queue1, conv1_out),
+            (self.queue2, conv2_out),
+            (self.queue3, conv3_out),
+        ]:
             if bool(queue) is False:
-                self._init_queue(queue, convX.shape, self.n_timesteps, device=convX.device)
+                self._init_queue(
+                    queue, convX.shape, self.n_timesteps, device=convX.device
+                )
 
         conv1_lstm_out = torch.zeros_like(conv1_out).to(device=conv1_out.device)
         conv2_lstm_out = torch.zeros_like(conv2_out).to(device=conv2_out.device)
         conv3_lstm_out = torch.zeros_like(conv3_out).to(device=conv3_out.device)
         # conv4_lstm_out = torch.zeros_like(conv4_out).to(device=conv4_out.device)
 
-        for batch_idx, (x_conv1, x_conv2, x_conv3) in enumerate(zip(conv1_out, conv2_out, conv3_out)):
+        for batch_idx, (x_conv1, x_conv2, x_conv3) in enumerate(
+            zip(conv1_out, conv2_out, conv3_out)
+        ):
             x_conv1 = x_conv1.to(conv1_out.device)
             x_conv2 = x_conv2.to(conv2_out.device)
             x_conv3 = x_conv3.to(conv3_out.device)
@@ -254,20 +298,31 @@ class Conv_LSTM(nn.Module):
             # x_conv4_lstm_in = torch.stack(tuple(self.queue4), dim=0)
 
             x_conv1_lstm_out = self.conv1_lstm(x_conv1_lstm_in)
-            x_conv1_lstm_out = attention(ConvLstm_out=torch.cat(x_conv1_lstm_out[0], dim=0))
+            x_conv1_lstm_out = attention(
+                ConvLstm_out=torch.cat(x_conv1_lstm_out[0], dim=0)
+            )
             x_conv2_lstm_out = self.conv2_lstm(x_conv2_lstm_in)
-            x_conv2_lstm_out = attention(ConvLstm_out=torch.cat(x_conv2_lstm_out[0], dim=0))
+            x_conv2_lstm_out = attention(
+                ConvLstm_out=torch.cat(x_conv2_lstm_out[0], dim=0)
+            )
             x_conv3_lstm_out = self.conv3_lstm(x_conv3_lstm_in)
-            x_conv3_lstm_out = attention(ConvLstm_out=torch.cat(x_conv3_lstm_out[0], dim=0))
+            x_conv3_lstm_out = attention(
+                ConvLstm_out=torch.cat(x_conv3_lstm_out[0], dim=0)
+            )
             # x_conv4_lstm_out = self.conv4_lstm(x_conv4_lstm_in)
             # x_conv4_lstm_out = attention(ConvLstm_out=torch.cat(x_conv4_lstm_out[0], dim=0))
-            
+
             conv1_lstm_out[batch_idx] = x_conv1_lstm_out
             conv2_lstm_out[batch_idx] = x_conv2_lstm_out
             conv3_lstm_out[batch_idx] = x_conv3_lstm_out
             # conv4_lstm_out[batch_idx] = x_conv4_lstm_out
 
-        return conv1_lstm_out, conv2_lstm_out, conv3_lstm_out, #conv4_lstm_out
+        return (
+            conv1_lstm_out,
+            conv2_lstm_out,
+            conv3_lstm_out,
+        )  # conv4_lstm_out
+
 
 class CnnDecoder(nn.Module):
     """
@@ -282,14 +337,15 @@ class CnnDecoder(nn.Module):
             (batch_size, 64,  height*8, width*8) after first concatenation
             (batch_size, 3,   height*8, width*8) after deconv1 (stride 1)
     """
+
     def __init__(
-            self,
-            in_channels_encoder: int = 3,
-            deep_channel_sizes: list[int] = [32, 64, 128, 256]
-            ) -> None:
+        self,
+        in_channels_encoder: int = 3,
+        deep_channel_sizes: list[int] = [32, 64, 128, 256],
+    ) -> None:
         """
         We have chosen SELU() activation function for its self-normalizing properties.
-        
+
         Advices:
             - in_channels = hidden_channels of the corresponding ConvLSTM layer + concatenation
                 + if conv4_lstm_out is not None, [256, 256, 128, 64]
@@ -311,28 +367,46 @@ class CnnDecoder(nn.Module):
         # )
         ### If conv4_lstm_out is not None, put in_channels(self.deconv3)=256, else 128
         self.deconv3 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=deep_channel_sizes_decode[0], 
-                               out_channels=deep_channel_sizes_decode[1], 
-                               kernel_size=2, stride=2, 
-                               padding=0, output_padding=0),
-            nn.SELU()
+            nn.ConvTranspose2d(
+                in_channels=deep_channel_sizes_decode[0],
+                out_channels=deep_channel_sizes_decode[1],
+                kernel_size=2,
+                stride=2,
+                padding=0,
+                output_padding=0,
+            ),
+            nn.SELU(),
         )
         self.deconv2 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=deep_channel_sizes_decode[1]*2, 
-                               out_channels=deep_channel_sizes_decode[2], 
-                               kernel_size=3, stride=2, 
-                               padding=1, output_padding=1),
-            nn.SELU()
+            nn.ConvTranspose2d(
+                in_channels=deep_channel_sizes_decode[1] * 2,
+                out_channels=deep_channel_sizes_decode[2],
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                output_padding=1,
+            ),
+            nn.SELU(),
         )
         self.deconv1 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=deep_channel_sizes_decode[2]*2, 
-                               out_channels=in_channels_encoder, 
-                               kernel_size=3, stride=1, 
-                               padding=1, output_padding=0),
-            nn.SELU()
+            nn.ConvTranspose2d(
+                in_channels=deep_channel_sizes_decode[2] * 2,
+                out_channels=in_channels_encoder,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                output_padding=0,
+            ),
+            nn.SELU(),
         )
 
-    def forward(self, conv1_lstm_out: torch.Tensor, conv2_lstm_out: torch.Tensor, conv3_lstm_out: torch.Tensor, conv4_lstm_out: torch.Tensor = 0) -> torch.Tensor:
+    def forward(
+        self,
+        conv1_lstm_out: torch.Tensor,
+        conv2_lstm_out: torch.Tensor,
+        conv3_lstm_out: torch.Tensor,
+        conv4_lstm_out: torch.Tensor = 0,
+    ) -> torch.Tensor:
         """
         Forward pass for the CNN decoder
 
@@ -352,13 +426,12 @@ class CnnDecoder(nn.Module):
         """
         # deconv4 = self.deconv4(conv4_lstm_out)
         # deconv4_concat = torch.cat((deconv4, conv3_lstm_out), dim = 1)
-        deconv3 = self.deconv3(conv3_lstm_out)      #deconv3 = self.deconv3(deconv4_concat)
-        deconv3_concat = torch.cat((deconv3, conv2_lstm_out), dim = 1)
+        deconv3 = self.deconv3(conv3_lstm_out)  # deconv3 = self.deconv3(deconv4_concat)
+        deconv3_concat = torch.cat((deconv3, conv2_lstm_out), dim=1)
         deconv2 = self.deconv2(deconv3_concat)
-        deconv2_concat = torch.cat((deconv2, conv1_lstm_out), dim = 1)
+        deconv2_concat = torch.cat((deconv2, conv1_lstm_out), dim=1)
         deconv1 = self.deconv1(deconv2_concat)
         return deconv1
-    
 
 
 ## Encoder-Decoder global model
@@ -368,23 +441,38 @@ class MSCRED(nn.Module):
 
     This model combines CNN Autoencoder and ConvLSTM layers for spatiotemporal feature extraction.
     """
-    def __init__(
-            self, 
-            encoder_in_channel: int, 
-            deep_channel_sizes: list[int], 
-            lstm_num_layers: int = 1,
-            lstm_timesteps: int = 5, 
-            lstm_effective_timesteps: list[int] | str = 'all'
-            ) -> None:
-        super().__init__()
-        assert len(lstm_effective_timesteps) > 0 and len(lstm_effective_timesteps) <= lstm_timesteps, "Effective timesteps must be non-empty and less than or equal to total timesteps"
 
-        if lstm_effective_timesteps == 'all':
+    def __init__(
+        self,
+        encoder_in_channel: int,
+        deep_channel_sizes: list[int],
+        lstm_num_layers: int = 1,
+        lstm_timesteps: int = 5,
+        lstm_effective_timesteps: list[int] | str = "all",
+    ) -> None:
+        super().__init__()
+        assert (
+            len(lstm_effective_timesteps) > 0
+            and len(lstm_effective_timesteps) <= lstm_timesteps
+        ), "Effective timesteps must be non-empty and less than or equal to total timesteps"
+
+        if lstm_effective_timesteps == "all":
             lstm_effective_timesteps = list(range(lstm_timesteps))
 
-        self.cnn_encoder = CnnEncoder(in_channels_encoder=encoder_in_channel, deep_channel_sizes=deep_channel_sizes)
-        self.conv_lstm = Conv_LSTM(deep_channel_sizes=deep_channel_sizes, num_layers=lstm_num_layers, n_timesteps=lstm_timesteps, n_effective_timesteps=lstm_effective_timesteps)
-        self.cnn_decoder = CnnDecoder(in_channels_encoder=encoder_in_channel, deep_channel_sizes=deep_channel_sizes)
+        self.cnn_encoder = CnnEncoder(
+            in_channels_encoder=encoder_in_channel,
+            deep_channel_sizes=deep_channel_sizes,
+        )
+        self.conv_lstm = Conv_LSTM(
+            deep_channel_sizes=deep_channel_sizes,
+            num_layers=lstm_num_layers,
+            n_timesteps=lstm_timesteps,
+            n_effective_timesteps=lstm_effective_timesteps,
+        )
+        self.cnn_decoder = CnnDecoder(
+            in_channels_encoder=encoder_in_channel,
+            deep_channel_sizes=deep_channel_sizes,
+        )
 
         self.time_steps = lstm_timesteps
         self.model_depth = len(deep_channel_sizes)
@@ -393,12 +481,14 @@ class MSCRED(nn.Module):
         """
         Initializes all the hidden states (h,c) of the ConvLSTM layers.
         """
-        if hasattr(self, 'conv_lstm'):
+        if hasattr(self, "conv_lstm"):
             for i in range(self.model_depth):
-                if hasattr(self.conv_lstm, f'conv{i+1}_lstm'):
-                    getattr(self.conv_lstm, f'conv{i+1}_lstm').reset_hidden_state()
+                if hasattr(self.conv_lstm, f"conv{i+1}_lstm"):
+                    getattr(self.conv_lstm, f"conv{i+1}_lstm").reset_hidden_state()
                 else:
-                    raise AttributeError(f"ConvLSTM layer conv{i+1}_lstm does not exist in Conv_LSTM module.")
+                    raise AttributeError(
+                        f"ConvLSTM layer conv{i+1}_lstm does not exist in Conv_LSTM module."
+                    )
         else:
             raise AttributeError("ConvLSTM module does not exist.")
 
@@ -417,12 +507,16 @@ class MSCRED(nn.Module):
         Returns:
             torch.Tensor: Reconstructed tensor from the decoder
         """
-        assert x.dim() == 4, "Input tensor must be 4D (batch_size, channels, height, width)"
+        assert (
+            x.dim() == 4
+        ), "Input tensor must be 4D (batch_size, channels, height, width)"
         # assert x.shape[0] > self.time_steps, "Input batch size must be greater than the number of time steps"
         # assert x.shape[0] % self.time_steps == 0, "Input batch size must be divisible by the number of time steps"
 
         conv1_out, conv2_out, conv3_out = self.cnn_encoder(x)
-        conv1_lstm_out, conv2_lstm_out, conv3_lstm_out = self.conv_lstm(conv1_out, conv2_out, conv3_out)
+        conv1_lstm_out, conv2_lstm_out, conv3_lstm_out = self.conv_lstm(
+            conv1_out, conv2_out, conv3_out
+        )
         gen_x = self.cnn_decoder(conv1_lstm_out, conv2_lstm_out, conv3_lstm_out)
-        
+
         return gen_x

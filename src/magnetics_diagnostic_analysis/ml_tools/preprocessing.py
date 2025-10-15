@@ -1,5 +1,6 @@
 import torch
 
+
 # For tensor of size (batch, time_steps, n_features)
 def normalize_batch(batch):
     """
@@ -14,6 +15,7 @@ def normalize_batch(batch):
     # Normalize to [-1, 1]
     normalized_batch = 2 * (batch - min_vals) / ranges - 1
     return normalized_batch, min_vals, max_vals
+
 
 def denormalize_batch(normalized_batch, min_vals, max_vals):
     """

@@ -5,11 +5,18 @@ from pathlib import Path
 import json
 
 from magnetics_diagnostic_analysis.project_mscred.setting_mscred import config
-from magnetics_diagnostic_analysis.project_mscred.utils.matrix_generator import generate_signature_matrix   
-from magnetics_diagnostic_analysis.project_mscred.utils.synthetic_anomaly_adding import create_anomalies, plot_anomalies
+from magnetics_diagnostic_analysis.project_mscred.utils.matrix_generator import (
+    generate_signature_matrix,
+)
+from magnetics_diagnostic_analysis.project_mscred.utils.synthetic_anomaly_adding import (
+    create_anomalies,
+    plot_anomalies,
+)
 
 
-def select_data_channels(ds, n_to_keep: int = 32, mandatory_channels: list[str] = []) -> np.ndarray:
+def select_data_channels(
+    ds, n_to_keep: int = 32, mandatory_channels: list[str] = []
+) -> np.ndarray:
     """
     Select specific data channels from the dataset based on the provided groups.
     Choose n_to_keep channels, ensuring mandatory_channels are included, and fill the rest randomly from good channels.
@@ -20,7 +27,10 @@ def select_data_channels(ds, n_to_keep: int = 32, mandatory_channels: list[str] 
         mandatory_channels: List of channels that must be included
     """
     # Load possible channels
-    path = Path(__file__).absolute().parent.parent.parent.parent.parent / "notebooks/result_files/nan_stats_magnetics/result_lists_magnetics_nans.json"
+    path = (
+        Path(__file__).absolute().parent.parent.parent.parent.parent
+        / "notebooks/result_files/nan_stats_magnetics/result_lists_magnetics_nans.json"
+    )
     with open(path) as f:
         d = json.load(f)
     possible_channels = d["good_vars_ids"]
@@ -37,10 +47,10 @@ def select_data_channels(ds, n_to_keep: int = 32, mandatory_channels: list[str] 
     data_return = np.zeros((n_to_keep, ds.time.size))
 
     for i, var_ch in enumerate(channels_to_keep):
-        
+
         if "::" in var_ch:
             var, ch = var_ch.split("::")
-            coord = [ c for c in ds[var].dims if c != "time"][0]
+            coord = [c for c in ds[var].dims if c != "time"][0]
             print(f"Coordinate for variable {var} channel {ch}: {coord}")
 
             vals = ds[var].sel(**{coord: ch}).values
@@ -70,9 +80,13 @@ def build_windows():
     5. Save results.
     """
     # Load preprocessed data
-    data_path = config.DIR_PREPROCESSED_DATA / f"data_magnetics_{config.SUFFIX}_cleaned.nc"
+    data_path = (
+        config.DIR_PREPROCESSED_DATA / f"data_magnetics_{config.SUFFIX}_cleaned.nc"
+    )
     ds = xr.open_dataset(data_path)
-    ds = ds.isel(time=slice(0, config.DATA_NUMBER))  # Select a subset for faster processing during testing
+    ds = ds.isel(
+        time=slice(0, config.DATA_NUMBER)
+    )  # Select a subset for faster processing during testing
     print(f"Data loaded from {data_path}")
 
     # Select specific channels
@@ -87,25 +101,25 @@ def build_windows():
             "flux_loop_flux::AMB_FL/P3U/1",
             "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M01",
             "b_field_tor_probe_saddle_voltage::XMB_SAD/OUT/M03",
-        ]
+        ],
     )
     path = config.DIR_PREPROCESSED_DATA / f"selected_channels_{config.SUFFIX}.json"
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         json.dump(channels_to_keep, f, indent=4)
     print(f"Data shape after channel selection: {data.shape}")
 
     # Add synthetic anomalies
     data_anomalies, anomalies_info = create_anomalies(
-        data, 
-        start_index=config.SET_SEPARATIONS[1], 
-        duration_range=(50, 500), 
-        n_anomalies=20, 
-        anomaly_strength=6.5, 
-        seed=config.SEED
+        data,
+        start_index=config.SET_SEPARATIONS[1],
+        duration_range=(50, 500),
+        n_anomalies=20,
+        anomaly_strength=6.5,
+        seed=config.SEED,
     )
-    #plot_anomalies(data, data_anomalies, anomalies_info, n_series_to_plot=3)
+    # plot_anomalies(data, data_anomalies, anomalies_info, n_series_to_plot=3)
     path = config.DIR_PREPROCESSED_DATA / f"created_anomalies_{config.SUFFIX}.json"
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         json.dump(anomalies_info, f, indent=4)
     print(f"\nAnomalies added at indices: {anomalies_info}")
 
@@ -117,12 +131,12 @@ def build_windows():
         max_time=None,
         gap_time=config.GAP_TIME,
         normalize=True,
-        saving=True
+        saving=True,
     )
     print("\nSignature matrix generation completed.")
 
     print("\nWindows building process completed.")
 
+
 if __name__ == "__main__":
     build_windows()
-

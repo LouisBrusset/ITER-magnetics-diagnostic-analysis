@@ -1,10 +1,10 @@
 """
 Machine Learning Tools Module
 
-Universal and reusable machine learning utilities designed for training and evaluating 
+Universal and reusable machine learning utilities designed for training and evaluating
 deep learning models on magnetics diagnostic data.
 
-This module provides universal tools that can be used across all package projects 
+This module provides universal tools that can be used across all package projects
 (MSCRED, VAE, SCINet) with a plug-and-play philosophy for rapid experimentation.
 
 Main Components:
@@ -28,7 +28,7 @@ from .train_callbacks import (
     LRScheduling,
     GradientClipping,
     DropOutScheduling,
-    EMA
+    EMA,
 )
 
 # Import metrics and loss functions
@@ -37,38 +37,23 @@ from .metrics import (
     mscred_anomaly_score,
     vae_loss_function,
     vae_reconstruction_error,
-    scinet_loss
+    scinet_loss,
 )
 
 # Import preprocessing utilities
-from .preprocessing import (
-    normalize_batch,
-    denormalize_batch
-)
+from .preprocessing import normalize_batch, denormalize_batch
 
 # Import projection and visualization tools
-from .projection_2d import (
-    project_tsne,
-    project_umap,
-    apply_umap,
-    plot_projection
-)
+from .projection_2d import project_tsne, project_umap, apply_umap, plot_projection
 
 # Import device management
-from .pytorch_device_selection import (
-    print_torch_info,
-    select_torch_device
-)
+from .pytorch_device_selection import print_torch_info, select_torch_device
 
 # Import reproducibility tools
-from .random_seed import (
-    seed_everything
-)
+from .random_seed import seed_everything
 
 # Import model inspection tools
-from .show_model_parameters import (
-    print_model_parameters
-)
+from .show_model_parameters import print_model_parameters
 
 __all__ = [
     # Training callbacks
@@ -77,31 +62,25 @@ __all__ = [
     "GradientClipping",
     "DropOutScheduling",
     "EMA",
-    
     # Metrics and loss functions
     "mscred_loss_function",
     "mscred_anomaly_score",
     "vae_loss_function",
     "vae_reconstruction_error",
     "scinet_loss",
-    
     # Preprocessing utilities
     "normalize_batch",
     "denormalize_batch",
-    
     # Projection and visualization
     "project_tsne",
     "project_umap",
     "apply_umap",
     "plot_projection",
-    
     # Device management
     "print_torch_info",
     "select_torch_device",
-    
     # Reproducibility tools
     "seed_everything",
-    
     # Model inspection
-    "print_model_parameters"
+    "print_model_parameters",
 ]

@@ -6,12 +6,18 @@ from torch.utils.data import Dataset
 from torch.utils.data import random_split
 
 from magnetics_diagnostic_analysis.project_scinet.setting_scinet import config
-from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum import data_synthetic_pendulum
+from magnetics_diagnostic_analysis.project_scinet.utils.data_creation_pendulum import (
+    data_synthetic_pendulum,
+)
 
 
-
-
-def build_dataset(num_samples: int = 1000, kapa_range: tuple = (3.0, 8.0), b_range: tuple = (0.1, 1.0), maxtime: float = 5.0, timesteps: int = 500) -> tuple[np.ndarray]:
+def build_dataset(
+    num_samples: int = 1000,
+    kapa_range: tuple = (3.0, 8.0),
+    b_range: tuple = (0.1, 1.0),
+    maxtime: float = 5.0,
+    timesteps: int = 500,
+) -> tuple[np.ndarray]:
     """
     Build a dataset for the pendulum problem.
 
@@ -38,23 +44,31 @@ def build_dataset(num_samples: int = 1000, kapa_range: tuple = (3.0, 8.0), b_ran
         kapa = np.random.uniform(*kapa_range)
         b = np.random.uniform(*b_range)
         params.append((kapa, b))
-        timeserie = data_synthetic_pendulum(kapa, b, timesteps=timesteps, maxtime=maxtime)
+        timeserie = data_synthetic_pendulum(
+            kapa, b, timesteps=timesteps, maxtime=maxtime
+        )
         observations.append(timeserie)
 
         # Build questions
-        question = np.random.uniform(0, maxtime*2)
+        question = np.random.uniform(0, maxtime * 2)
         questions.append(question)
 
         # Build answer to the question
         a_corr.append(data_synthetic_pendulum(kapa, b, t=np.array(question)))
-    
-    return np.array(observations), np.array(questions), np.array(a_corr), np.array(params)
+
+    return (
+        np.array(observations),
+        np.array(questions),
+        np.array(a_corr),
+        np.array(params),
+    )
 
 
 class PendulumDataset(Dataset):
     """
     Inherits from torch.utils.data.Dataset to create a dataset for the pendulum problem.
     """
+
     def __init__(self, observations, questions, answers, params):
         self.observations = torch.tensor(observations, dtype=torch.float32)
         self.questions = torch.tensor(questions, dtype=torch.float32)
@@ -65,8 +79,12 @@ class PendulumDataset(Dataset):
         return len(self.observations)
 
     def __getitem__(self, idx):
-        return self.observations[idx], self.questions[idx], self.answers[idx], self.params[idx]
-    
+        return (
+            self.observations[idx],
+            self.questions[idx],
+            self.answers[idx],
+            self.params[idx],
+        )
 
 
 if __name__ == "__main__":
@@ -79,10 +97,11 @@ if __name__ == "__main__":
     timesteps = config.TIMESTEPS
     maxtime = config.MAXTIME
 
-    observations, questions, answers, params = build_dataset(N_samples, kapa_range, b_range, maxtime=maxtime, timesteps=timesteps)
+    observations, questions, answers, params = build_dataset(
+        N_samples, kapa_range, b_range, maxtime=maxtime, timesteps=timesteps
+    )
     dataset = PendulumDataset(observations, questions, answers, params)
     print("\nCreation of dataset completed.\n")
-
 
     # Split into training and validation sets
 
@@ -105,9 +124,3 @@ if __name__ == "__main__":
 
     print(f"Training dataset saved at: {path_train}")
     print(f"Validation dataset saved at: {path_valid}\n")
-
-
-
-
-
-

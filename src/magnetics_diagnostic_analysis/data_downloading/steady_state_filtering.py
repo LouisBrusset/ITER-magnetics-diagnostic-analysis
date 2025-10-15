@@ -26,17 +26,19 @@ def _keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     # If no True regions found, return the original mask
     if len(starts) == 0:
         return mask
-    
+
     # Find biggest connected component
     lengths = ends - starts
     largest_idx = np.argmax(lengths)
     new_mask = np.zeros_like(mask)
-    new_mask[starts[largest_idx]:ends[largest_idx]] = True
-    
+    new_mask[starts[largest_idx] : ends[largest_idx]] = True
+
     return new_mask
 
 
-def _filter_low_current_regions(ip: np.ndarray, mask: np.ndarray, min_current: float = 4.e4) -> np.ndarray:
+def _filter_low_current_regions(
+    ip: np.ndarray, mask: np.ndarray, min_current: float = 4.0e4
+) -> np.ndarray:
     """
     Remove True values from mask where the current is below a threshold.
 
@@ -53,7 +55,9 @@ def _filter_low_current_regions(ip: np.ndarray, mask: np.ndarray, min_current: f
     return new_mask
 
 
-def ip_filter(ip: np.ndarray, filter: str = 'default', min_current: float = None) -> np.ndarray:
+def ip_filter(
+    ip: np.ndarray, filter: str = "default", min_current: float = None
+) -> np.ndarray:
     """
     Create a mask to select the permanent state phase of each shot.
 
@@ -69,30 +73,34 @@ def ip_filter(ip: np.ndarray, filter: str = 'default', min_current: float = None
             - filtered_ip (np.ndarray): filtered current signal
     """
     # 1. Low-pass filtering FIR (=Finite Impulse Response)
-    cutoff = 1.0e-3   # cutoff frequency (Hz)
-    ntaps = 101     # Number of coefficients (must be odd for symmetry)
-    fir_coeff = signal.firwin(ntaps, cutoff, window='hamming')
+    cutoff = 1.0e-3  # cutoff frequency (Hz)
+    ntaps = 101  # Number of coefficients (must be odd for symmetry)
+    fir_coeff = signal.firwin(ntaps, cutoff, window="hamming")
 
-    if filter == 'bidirectional':
+    if filter == "bidirectional":
         filtered_ip = signal.filtfilt(fir_coeff, 1.0, ip)
     else:
         filtered_ip = signal.lfilter(fir_coeff, 1.0, ip)
         delay = (ntaps - 1) // 2
         filtered_ip = filtered_ip[delay:]
-        filtered_ip = np.pad(filtered_ip, (0, delay), mode='edge')  # RRepeat last value to maintain original length
-        
+        filtered_ip = np.pad(
+            filtered_ip, (0, delay), mode="edge"
+        )  # RRepeat last value to maintain original length
+
     # 2. Gradient calculation
     gradient = np.gradient(filtered_ip)
-    
+
     # 3. Thresholding for flat regions
     std_gradient = np.std(gradient)
-    threshold = 0.25 * std_gradient      # Adaptative threshold based on gradient standard deviation
+    threshold = (
+        0.25 * std_gradient
+    )  # Adaptative threshold based on gradient standard deviation
     flat_mask = np.abs(gradient) < threshold
-    
+
     # 4. Optional current thresholding
     if min_current is not None:
         flat_mask = _filter_low_current_regions(filtered_ip, flat_mask, min_current)
-    
+
     # 5. Keep largest connected component
     mask_clean = _keep_largest_connected_component(flat_mask)
 
@@ -100,36 +108,73 @@ def ip_filter(ip: np.ndarray, filter: str = 'default', min_current: float = None
 
 
 if __name__ == "__main__":
-    index = [28752, 28750, 28655, 28656, 28657, 28744, 28751, 28747, 28748, 28749, 28755, 28757, 28758, 28763, 28801, 28764, 28765, 28766, 28767, 28768, 28769, 28770, 28771, 28772, 28773]
+    index = [
+        28752,
+        28750,
+        28655,
+        28656,
+        28657,
+        28744,
+        28751,
+        28747,
+        28748,
+        28749,
+        28755,
+        28757,
+        28758,
+        28763,
+        28801,
+        28764,
+        28765,
+        28766,
+        28767,
+        28768,
+        28769,
+        28770,
+        28771,
+        28772,
+        28773,
+    ]
     shot_index = np.random.choice(index)
     ip_example = xr.open_zarr(
         f"https://s3.echo.stfc.ac.uk/mast/level2/shots/{shot_index}.zarr",
         group="summary",
-    )['ip']
+    )["ip"]
 
     ip_values = ip_example.values
-    time_values = ip_example.coords['time'].values if 'time' in ip_example.coords else np.arange(len(ip_values))
+    time_values = (
+        ip_example.coords["time"].values
+        if "time" in ip_example.coords
+        else np.arange(len(ip_values))
+    )
 
-    mask, filtered_signal, fir_coeff = ip_filter(ip_values, filter='default', min_current=4.e4)
-    
+    mask, filtered_signal, fir_coeff = ip_filter(
+        ip_values, filter="default", min_current=4.0e4
+    )
+
     # Display the result
     import matplotlib.pyplot as plt
-    
+
     plt.figure(figsize=(12, 6))
-    plt.plot(time_values, ip_values, label='Current (IP)')
-    plt.plot(time_values, filtered_signal, label='Filtered Signal', linestyle='-.')
-    plt.plot(time_values, mask * np.max(ip_values), label='Permanent State Mask', linestyle='--')
+    plt.plot(time_values, ip_values, label="Current (IP)")
+    plt.plot(time_values, filtered_signal, label="Filtered Signal", linestyle="-.")
+    plt.plot(
+        time_values,
+        mask * np.max(ip_values),
+        label="Permanent State Mask",
+        linestyle="--",
+    )
     plt.legend()
-    plt.title('Permanent State Filtering Example')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Current (A)')
-    
+    plt.title("Permanent State Filtering Example")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Current (A)")
+
     # Display filter
     plt.figure(figsize=(12, 6))
     w, h = signal.freqz(fir_coeff)
-    plt.plot(w, 20*np.log10(np.abs(h)))
+    plt.plot(w, 20 * np.log10(np.abs(h)))
     plt.title("Filter Frequency Response")
-    plt.xlabel('Normalized Frequency (×π rad/sample)')
-    plt.ylabel('Gain (dB)')
-    
+    plt.xlabel("Normalized Frequency (×π rad/sample)")
+    plt.ylabel("Gain (dB)")
+
     plt.show()

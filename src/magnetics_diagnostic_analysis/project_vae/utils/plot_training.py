@@ -3,11 +3,16 @@ import torch
 import matplotlib.pyplot as plt
 
 from magnetics_diagnostic_analysis.project_vae.setting_vae import config
-from magnetics_diagnostic_analysis.ml_tools.projection_2d import project_tsne, project_umap, plot_projection
+from magnetics_diagnostic_analysis.ml_tools.projection_2d import (
+    project_tsne,
+    project_umap,
+    plot_projection,
+)
 
 
-
-def plot_history(history: list[float], save_path: str | None = None, verbose: bool = False) -> None:
+def plot_history(
+    history: list[float], save_path: str | None = None, verbose: bool = False
+) -> None:
     """
     Plot training history.
 
@@ -21,13 +26,13 @@ def plot_history(history: list[float], save_path: str | None = None, verbose: bo
         Fig is saved to disk if save_path is provided, otherwise displayed.
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(history, label='Training Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('VAE Training Loss Over Epochs')
+    plt.plot(history, label="Training Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("VAE Training Loss Over Epochs")
     plt.legend()
     plt.grid(True)
-    
+
     if save_path:
         plt.savefig(save_path)
         if verbose:
@@ -38,8 +43,12 @@ def plot_history(history: list[float], save_path: str | None = None, verbose: bo
     return None
 
 
-
-def plot_density_and_threshold(density_values: np.ndarray, threshold: float, save_path: str | None = None, verbose: bool = False) -> None:
+def plot_density_and_threshold(
+    density_values: np.ndarray,
+    threshold: float,
+    save_path: str | None = None,
+    verbose: bool = False,
+) -> None:
     """
     Plot density values and threshold line for anomaly detection.
 
@@ -54,14 +63,18 @@ def plot_density_and_threshold(density_values: np.ndarray, threshold: float, sav
         Fig is saved to disk if save_path is provided, otherwise displayed.
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(np.sort(density_values), np.linspace(0, 1, len(density_values)), label='Density Values')
-    plt.axvline(x=threshold, color='r', linestyle='--', label='Threshold')
-    plt.xlabel('Density Value')
-    plt.ylabel('Cumulative Distribution')
-    plt.title('KDE Density Values with Threshold')
+    plt.plot(
+        np.sort(density_values),
+        np.linspace(0, 1, len(density_values)),
+        label="Density Values",
+    )
+    plt.axvline(x=threshold, color="r", linestyle="--", label="Threshold")
+    plt.xlabel("Density Value")
+    plt.ylabel("Cumulative Distribution")
+    plt.title("KDE Density Values with Threshold")
     plt.legend()
     plt.grid(True)
-    
+
     if save_path:
         plt.savefig(save_path)
         if verbose:
@@ -72,9 +85,13 @@ def plot_density_and_threshold(density_values: np.ndarray, threshold: float, sav
     return None
 
 
-
-
-def plot_projected_latent_space(latent_features: np.ndarray, clusters: np.ndarray, outlier_mask: np.ndarray, save_path: str | None = None, verbose: bool = False) -> None:
+def plot_projected_latent_space(
+    latent_features: np.ndarray,
+    clusters: np.ndarray,
+    outlier_mask: np.ndarray,
+    save_path: str | None = None,
+    verbose: bool = False,
+) -> None:
     """
     Project and plot latent features in 2D space with clusters and outliers highlighted.
     Use the TSNE projection method for dimensionality reduction and then plot it.
@@ -93,7 +110,7 @@ def plot_projected_latent_space(latent_features: np.ndarray, clusters: np.ndarra
     """
     # First, reduce to 2D using TSNE
     projection = project_tsne(latent_features, seed=config.SEED)
-    
+
     # Plot the projection with clusters
     plot_projection(
         projection=projection,
@@ -101,12 +118,17 @@ def plot_projected_latent_space(latent_features: np.ndarray, clusters: np.ndarra
         title="Projected Latent Space with Clusters",
         filename=save_path if save_path else "latent_space_projection.png",
         legend=True,
-        verbose=verbose
+        verbose=verbose,
     )
     return None
 
 
-def plot_random_reconstructions(reconstruction_couples: tuple[np.ndarray, np.ndarray], n_samples=5, save_path=None, verbose=False) -> None:
+def plot_random_reconstructions(
+    reconstruction_couples: tuple[np.ndarray, np.ndarray],
+    n_samples=5,
+    save_path=None,
+    verbose=False,
+) -> None:
     """
     Plot random samples of original and reconstructed time series. It selects n_samples random indices
     from the provided reconstruction couples and plots them for visual comparison.
@@ -131,11 +153,11 @@ def plot_random_reconstructions(reconstruction_couples: tuple[np.ndarray, np.nda
     plt.figure(figsize=(15, 3 * n_samples))
     for i, idx in enumerate(random_indices):
         plt.subplot(n_samples, 1, i + 1)
-        plt.plot(x_init[idx], label='Original', alpha=0.7)
-        plt.plot(x_recon[idx], label='Reconstructed', alpha=0.7)
-        plt.title(f'Sample {idx}')
-        plt.xlabel('Time Steps')
-        plt.ylabel('Value')
+        plt.plot(x_init[idx], label="Original", alpha=0.7)
+        plt.plot(x_recon[idx], label="Reconstructed", alpha=0.7)
+        plt.title(f"Sample {idx}")
+        plt.xlabel("Time Steps")
+        plt.ylabel("Value")
         plt.legend()
         plt.grid(True)
     plt.tight_layout()
