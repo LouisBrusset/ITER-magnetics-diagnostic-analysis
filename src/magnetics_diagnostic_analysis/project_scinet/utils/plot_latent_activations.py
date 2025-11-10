@@ -178,8 +178,8 @@ if __name__ == "__main__":
     )
     print("Latent activations computed.")
 
-    path = config.DIR_FIGURES / "latent_activations_3d.png"
+    path = config.DIR_FIGURES / "latent_activations_3d_2.png"
     plot_3d_latent_activations(
         kapa_grid, b_grid, latent_activations, save_path=path, shared_scale=True
     )
-    print(f"Latent activations plotted. Saved at:{path}")
+    print(f"Latent activations plotted. Saved at: {path}")
